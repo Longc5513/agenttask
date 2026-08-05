@@ -14,6 +14,42 @@ import {
 } from "@/lib/genlayer";
 import type { ContractStats, MandateRecord, TxResult } from "@/lib/types";
 
+// Pixel Character Component
+function PixelCharacter({ step, message }: { step: number; message: string }) {
+  const messages = [
+    "Hi! I'm AgentBot! Let me show you how this works!",
+    "First, create TWO wallets — one for you, one for your worker!",
+    "Now connect your Principal wallet!",
+    "Time to post a mandate and bond some GEN!",
+    "Set the partial band — how much does the agent get if partial?",
+    "Switch wallets! Connect the Agent wallet now!",
+    "Agent accepts the mandate — 30 days to deliver!",
+    "Submit your deliverable with proof on Arweave!",
+    "Switch back to Principal wallet!",
+    "Review the delivery — accept or challenge!",
+    "Run the AI jury — 3 validators judge independently!",
+    "Settle the bond — winner gets paid!",
+  ];
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem", padding: "1rem", background: "linear-gradient(135deg, #1a1a2e, #2a2a3e)", borderRadius: "1rem", border: "2px solid #6366f1" }}>
+      <div className="pixel-float" style={{ width: "48px", height: "48px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: "40px", height: "40px", background: "#fbbf24", borderRadius: "8px 8px 4px 4px", position: "relative", boxShadow: "0 0 10px rgba(251, 191, 36, 0.3)" }}>
+          <div style={{ position: "absolute", top: "10px", left: "8px", width: "6px", height: "6px", background: "#1a1a2e", borderRadius: "50%" }} />
+          <div style={{ position: "absolute", top: "10px", right: "8px", width: "6px", height: "6px", background: "#1a1a2e", borderRadius: "50%" }} />
+          <div style={{ position: "absolute", bottom: "8px", left: "50%", transform: "translateX(-50%)", width: "12px", height: "4px", background: "#1a1a2e", borderRadius: "2px" }} />
+        </div>
+      </div>
+      <div className="slide-up" style={{ flex: 1 }}>
+        <div style={{ fontSize: "0.75rem", color: "#fbbf24", fontWeight: 700, marginBottom: "0.25rem" }}>AgentBot</div>
+        <div style={{ fontSize: "0.85rem", color: "#fff", lineHeight: 1.4 }}>
+          {messages[step] || messages[0]}
+        </div>
+      </div>
+      <div className="sparkle" style={{ fontSize: "1.5rem" }}>✨</div>
+    </div>
+  );
+}
+
 const emptyStats: ContractStats = {
   mandate_count: "0",
   total_bonded: "0",
@@ -61,7 +97,7 @@ export default function Page() {
   const [mandateId, setMandateId] = useState("0");
   const [tx, setTx] = useState<TxResult>({ success: true });
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState<"ledger" | "action" | "guide">("ledger");
+  const [tab, setTab] = useState<"guide" | "ledger" | "action">("guide"); const [currentStep, setCurrentStep] = useState(0);
 
   // Form fields
   const [agentAddr, setAgentAddr] = useState("");
@@ -231,6 +267,9 @@ export default function Page() {
               <p style={{ fontSize: "0.85rem", color: "#9ca3af", margin: 0 }}>Follow these 11 steps to complete a full mandate lifecycle</p>
             </div>
 
+            {/* Pixel Character Guide */}
+            <PixelCharacter step={currentStep} message="" />
+
             {/* Visual Flow Diagram */}
             <div className="animate-fade-in" style={{ display: "flex", justifyContent: "center", gap: "0.5rem", marginBottom: "2rem", flexWrap: "wrap" }}>
               {["Create", "Post", "Lock", "Accept", "Deliver", "Challenge", "Judge", "Settle"].map((label, i) => (
@@ -283,7 +322,7 @@ export default function Page() {
                 { step: "10", icon: "🤖", title: "Run AI Adjudication", color: "#8b5cf6", desc: "Either party can click 'Run AI Jury'. 3 validators independently fetch evidence and judge: FULFILLED, PARTIAL, or REJECTED.", action: "AI evaluates", tip: "Validators fetch evidence independently" },
                 { step: "11", icon: "💰", title: "Settle Bond", color: "#10b981", desc: "Click 'Settle Bond'. FULFILLED = Agent gets 100%. PARTIAL = Agent gets partial%. REJECTED = Principal gets 100%.", action: "GEN distributed", tip: "Real GEN via emit_transfer" },
               ].map((s, i) => (
-                <div key={s.step} className="step-card" style={{ display: "flex", gap: "1rem", marginBottom: "1rem", position: "relative" }}>
+                <div key={s.step} className="step-card" onClick={() => setCurrentStep(parseInt(s.step))} style={{ display: "flex", gap: "1rem", marginBottom: "1rem", position: "relative", cursor: "pointer" }}>
                   {/* Step Circle */}
                   <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: s.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, zIndex: 1, border: "3px solid #111118" }}>
                     <span style={{ fontSize: "1rem" }}>{s.icon}</span>

@@ -1054,3 +1054,95 @@ footer button {
   background: linear-gradient(to bottom, #6366f1, #10b981);
   margin: 0 auto;
 }
+
+/* Pixel Character */
+.pixel-char {
+  width: 32px;
+  height: 32px;
+  position: relative;
+  animation: walk 0.4s steps(2) infinite;
+}
+
+.pixel-char::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: 
+    /* Head */
+    radial-gradient(circle at 50% 25%, #fbbf24 4px, transparent 4px),
+    /* Eyes */
+    radial-gradient(circle at 40% 22%, #1a1a2e 2px, transparent 2px),
+    radial-gradient(circle at 60% 22%, #1a1a2e 2px, transparent 2px),
+    /* Body */
+    linear-gradient(#6366f1 55%, #4f46e5 55%),
+    /* Arms */
+    radial-gradient(ellipse at 25% 55%, #6366f1 3px, transparent 3px),
+    radial-gradient(ellipse at 75% 55%, #6366f1 3px, transparent 3px),
+    /* Legs */
+    linear-gradient(to bottom, #4f46e5 55%, #1e1b4b 55%);
+  border-radius: 4px;
+}
+
+@keyframes walk {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-10px) rotate(5deg); }
+  75% { transform: translateY(-5px) rotate(-5deg); }
+}
+
+.pixel-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.sparkle {
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+@keyframes bounceIn {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.bounce-in {
+  animation: bounceIn 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes typing {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+.typing-text {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typing 2s steps(40) forwards;
+}
+
+@keyframes jump {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+.jump {
+  animation: jump 0.5s ease;
+}
