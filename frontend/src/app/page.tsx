@@ -1,25 +1,6 @@
 "use client";
 
-import {
-  Activity,
-  ArrowRight,
-  CheckCircle2,
-  CircleDollarSign,
-  CloudCog,
-  ExternalLink,
-  FileLock2,
-  Gauge,
-  LoaderCircle,
-  RadioTower,
-  RefreshCw,
-  RotateCcw,
-  ShieldCheck,
-  Siren,
-  Wallet,
-} from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { PulseField } from "@/components/PulseField";
-import { Reveal } from "@/components/Reveal";
+import { useCallback, useEffect, useState } from "react";
 import {
   connectWallet,
   contractAddress,
@@ -33,18 +14,6 @@ import {
 } from "@/lib/genlayer";
 import type { ContractStats, MandateRecord, TxResult } from "@/lib/types";
 
-type ActionKey =
-  | "OPEN"
-  | "BANDS"
-  | "ACTIVATE"
-  | "DELIVERY"
-  | "CHALLENGE"
-  | "CLOSE"
-  | "REVIEW"
-  | "SETTLE"
-  | "RECOVERY"
-  | "TIMEOUT";
-
 const emptyStats: ContractStats = {
   mandate_count: "0",
   total_bonded: "0",
@@ -53,555 +22,320 @@ const emptyStats: ContractStats = {
   total_principal_refunded: "0",
 };
 
-function parseJson<T>(value: unknown): T {
-  if (typeof value === "string") return JSON.parse(value) as T;
-  return value as T;
+function short(v: string, l = 6, r = 4) {
+  return v?.length > l + r + 3 ? `${v.slice(0, l)}…${v.slice(-r)}` : v || "—";
 }
 
-function short(value: string, left = 7, right = 5) {
-  if (!value || value.length <= left + right + 3) return value || "Not set";
-  return `${value.slice(0, left)}...${value.slice(-right)}`;
+function parseJson<T>(v: unknown): T {
+  return typeof v === "string" ? JSON.parse(v) as T : v as T;
 }
 
-function nextAction(status?: string): ActionKey {
-  if (!status) return "OPEN";
-  if (status === "DRAFT") return "BANDS";
-  if (status === "OFFERED") return "ACTIVATE";
-  if (status === "ACTIVE") return "DELIVERY";
-  if (status === "DELIVERED") return "CHALLENGE";
-  if (status === "REVIEW_READY") return "REVIEW";
-  if (status === "RULING_READY") return "SETTLE";
-  if (status === "EVIDENCE_UNAVAILABLE") return "RECOVERY";
-  return "OPEN";
+const STEPS = [
+  { key: "OPEN", label: "Post Mandate", desc: "Principal bonds reward" },
+  { key: "BANDS", label: "Lock Band", desc: "Set partial %" },
+  { key: "ACCEPT", label: "Accept", desc: "Agent takes mandate" },
+  { key: "DELIVER", label: "Deliver", desc: "Agent submits work" },
+  { key: "CHALLENGE", label: "Challenge", desc: "Principal reviews" },
+  { key: "ADJUDICATE", label: "Adjudicate", desc: "AI jury decides" },
+  { key: "SETTLE", label: "Settle", desc: "Bond distributed" },
+] as const;
+
+type StepKey = typeof STEPS[number]["key"];
+
+function stepForStatus(s?: string): number {
+  if (!s) return 0;
+  if (s === "DRAFT") return 1;
+  if (s === "OFFERED") return 2;
+  if (s === "ACTIVE") return 3;
+  if (s === "DELIVERED" || s === "CHALLENGED" || s === "REVIEW_READY") return 4;
+  if (s === "RULING_READY") return 5;
+  if (s === "SETTLED" || s === "RECOVERED" || s === "CANCELLED" || s === "EXPIRED") return 6;
+  return 0;
 }
 
-function actionLabel(action: ActionKey) {
-  return {
-    OPEN: "Open principal bond",
-    BANDS: "Lock payout bands",
-    ACTIVATE: "Accept MANDATE",
-    DELIVERY: "Report incident",
-    CHALLENGE: "Attach principal response",
-    CLOSE: "Close response window",
-    REVIEW: "Run GenLayer jury",
-    SETTLE: "Distribute bond",
-    RECOVERY: "Approve neutral recovery",
-    TIMEOUT: "Claim expired recovery",
-  }[action];
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  wide = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  type?: string;
-  wide?: boolean;
-}) {
-  return (
-    <label className={wide ? "field field-wide" : "field"}>
-      <span>{label}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-      />
-    </label>
-  );
-}
-
-export default function Home() {
-  const [address, setAddress] = useState<string>(() => contractAddress());
-  const [addressDraft, setAddressDraft] = useState<string>(() => contractAddress());
-  const [wallet, setWallet] = useState("");
+export default function Page() {
+  const [account, setAccount] = useState("");
   const [stats, setStats] = useState<ContractStats>(emptyStats);
-  const [sla, setSla] = useState<MandateRecord | null>(null);
-  const [slaId, setSlaId] = useState("0");
-  const [activeAction, setActiveAction] = useState<ActionKey>("OPEN");
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<TxResult | null>(null);
+  const [mandateId, setMandateId] = useState("0");
+  const [mandate, setMandate] = useState<MandateRecord | null>(null);
+  const [tx, setTx] = useState<TxResult>({ success: true });
+  const [loading, setLoading] = useState(false);
+  const [contractAddr, setContractAddr] = useState("");
+  const [activeStep, setActiveStep] = useState<StepKey>("OPEN");
 
-  const [agent, setAgent] = useState("");
-  const [service, setService] = useState("");
-  const [termsUrl, setTermsUrl] = useState("");
-  const [termsCommitment, setTermsCommitment] = useState("");
-  const [statusOrigin, setStatusOrigin] = useState("");
-  const [monitorOrigin, setMonitorOrigin] = useState("");
-  const [bond, setBond] = useState("1");
-  const [minor, setMinor] = useState("0.2");
-  const [major, setMajor] = useState("0.6");
-  const [windowNote, setWindowNote] = useState("");
-  const [monitorSnapshot, setMonitorSnapshot] = useState("");
-  const [monitorCommitment, setMonitorCommitment] = useState("");
-  const [statusSnapshot, setStatusSnapshot] = useState("");
-  const [statusCommitment, setStatusCommitment] = useState("");
-  const [principalSnapshot, setPrincipalSnapshot] = useState("");
-  const [principalCommitment, setPrincipalCommitment] = useState("");
-  const [principalNote, setPrincipalNote] = useState("");
+  // Form fields
+  const [agentAddr, setAgentAddr] = useState("");
+  const [title, setTitle] = useState("");
+  const [briefUrl, setBriefUrl] = useState("");
+  const [briefCommit, setBriefCommit] = useState("");
+  const [evidenceUrl, setEvidenceUrl] = useState("");
+  const [evidenceCommit, setEvidenceCommit] = useState("");
+  const [bondAmount, setBondAmount] = useState("1");
+  const [partialPct, setPartialPct] = useState("50");
+  const [deliveryNote, setDeliveryNote] = useState("");
+  const [deliveryUrl, setDeliveryUrl] = useState("");
+  const [deliveryCommit, setDeliveryCommit] = useState("");
+  const [counterNote, setCounterNote] = useState("");
+  const [counterUrl, setCounterUrl] = useState("");
+  const [counterCommit, setCounterCommit] = useState("");
 
-  const loadSla = useCallback(async (id = slaId) => {
-    if (!contractAddress()) return;
-    const result = await readContract("get_sla", [BigInt(id || "0")]);
-    if (!result.success) {
-      setNotice(result);
-      return;
-    }
+  const ca = contractAddr || contractAddress();
+
+  const sync = useCallback(async () => {
+    if (!ca) return;
     try {
-      const record = parseJson<MandateRecord>(result.data);
-      if (!record.mandate_id && record.mandate_id !== "0") throw new Error("MANDATE was not found.");
-      setSla(record);
-      setActiveAction(nextAction(record.status));
-      setNotice({ success: true, data: `MANDATE #${record.mandate_id} received from Studionet.` });
-    } catch (error) {
-      setNotice({
-        success: false,
-        error: error instanceof Error ? error.message : "Could not parse the MANDATE record.",
-      });
-    }
-  }, [slaId]);
+      const s = await readContract("get_stats", [[]]);
+      if (s) setStats(parseJson<ContractStats>(s));
+    } catch {}
+  }, [ca]);
 
-  const syncStats = useCallback(async () => {
-    const current = contractAddress();
-    if (!current) return;
-    const result = await readContract("get_stats");
-    if (!result.success) {
-      setNotice(result);
-      return;
-    }
+  useEffect(() => { sync(); }, [sync]);
+
+  const loadMandate = async () => {
+    if (!ca) return;
     try {
-      setStats(parseJson<ContractStats>(result.data));
-      setNotice({ success: true, data: "Live contract telemetry refreshed." });
-    } catch {
-      setNotice({ success: false, error: "The contract returned unreadable telemetry." });
+      const r = await readContract("get_mandate", [[parseInt(mandateId)]]);
+      if (r) setMandate(parseJson<MandateRecord>(r));
+    } catch { setMandate(null); }
+  };
+
+  const doConnect = async () => {
+    const r = await connectWallet();
+    if (r.success && r.data) {
+      setAccount(r.data as string);
+      sync();
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void syncStats();
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [syncStats]);
+  const wr = async (fn: string, args: unknown[], value = BigInt(0)) => {
+    if (!ca || !account) return;
+    setLoading(true);
+    const r = await writeContract(fn, args, value);
+    setLoading(false);
+    setTx(r);
+    if (r.success) setTimeout(sync, 3000);
+  };
 
-  async function handleWallet() {
-    const result = await connectWallet();
-    setNotice(result);
-    if (result.success) setWallet(String(result.data));
-  }
-
-  async function useAddress() {
-    const value = addressDraft.trim();
-    if (!/^0x[a-fA-F0-9]{40}$/.test(value)) {
-      setNotice({ success: false, error: "Enter a valid 42-character contract address." });
-      return;
-    }
-    saveContractAddress(value);
-    setAddress(value);
-    setSla(null);
-    await syncStats();
-  }
-
-  async function runAction() {
-    setBusy(true);
-    setNotice(null);
-    try {
-      let result: TxResult;
-      const id = BigInt(slaId || "0");
-      if (activeAction === "OPEN") {
-        result = await writeContract(
-          "open_sla",
-          [agent, service, termsUrl, termsCommitment, statusOrigin, monitorOrigin],
-          parseGen(bond),
-        );
-      } else if (activeAction === "BANDS") {
-        result = await writeContract("lock_payout_bands", [
-          id,
-          parseGen(minor),
-          parseGen(major),
-        ]);
-      } else if (activeAction === "ACTIVATE") {
-        result = await writeContract("activate_sla", [id]);
-      } else if (activeAction === "DELIVERY") {
-        result = await writeContract("report_incident", [
-          id,
-          windowNote,
-          monitorSnapshot,
-          monitorCommitment,
-          statusSnapshot,
-          statusCommitment,
-        ]);
-      } else if (activeAction === "CHALLENGE") {
-        result = await writeContract("respond_incident", [
-          id,
-          principalSnapshot,
-          principalCommitment,
-          principalNote,
-        ]);
-      } else if (activeAction === "CLOSE") {
-        result = await writeContract("close_response_window", [id]);
-      } else if (activeAction === "REVIEW") {
-        result = await writeContract("adjudicate_incident", [id]);
-      } else if (activeAction === "SETTLE") {
-        result = await writeContract("settle_incident", [id]);
-      } else if (activeAction === "TIMEOUT") {
-        result = await writeContract("claim_recovery_timeout", [id]);
-      } else {
-        result = await writeContract("approve_recovery", [id]);
-      }
-      setNotice(result);
-      if (result.success) {
-        await syncStats();
-        if (activeAction === "OPEN") {
-          const createdId = stats.mandate_count;
-          setSlaId(createdId);
-          await loadSla(createdId);
-        } else {
-          await loadSla();
-        }
-      }
-    } catch (error) {
-      setNotice({
-        success: false,
-        error: error instanceof Error ? error.message : "Action failed.",
-      });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const activeBond = useMemo(() => {
-    try {
-      return formatGen(sla?.bond ?? stats.active_bond);
-    } catch {
-      return "0.00";
-    }
-  }, [sla?.bond, stats.active_bond]);
+  const currentStep = mandate ? stepForStatus(mandate.status) : 0;
 
   return (
-    <main>
-      <header className="site-header">
-        <a className="brand" href="#top" aria-label="AgentTask home">
-          <span className="brand-mark"><Activity size={20} /></span>
-          <span>AgentTask</span>
-        </a>
-        <nav aria-label="Primary navigation">
-          <a href="#desk">MANDATE desk</a>
-          <a href="#evidence">Evidence</a>
-          <a href="#how">How it works</a>
-        </nav>
-        <button className="wallet-button" type="button" onClick={handleWallet}>
-          <Wallet size={17} />
-          {wallet ? short(wallet) : "Connect wallet"}
-        </button>
+    <div style={{ minHeight: "100vh", background: "#0a0a0f", color: "#e0e0e0", fontFamily: "system-ui, sans-serif" }}>
+      {/* Header */}
+      <header style={{ padding: "1.5rem 2rem", borderBottom: "1px solid #1a1a2e", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h1 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0, color: "#fff" }}>
+            <span style={{ color: "#6366f1" }}>Agent</span>Task
+          </h1>
+          <p style={{ fontSize: "0.75rem", color: "#666", margin: "0.25rem 0 0" }}>Bonded mandates for autonomous work</p>
+        </div>
+        <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+          {ca && <a href={explorerContract(ca)} target="_blank" rel="noopener" style={{ fontSize: "0.75rem", color: "#6366f1", textDecoration: "none" }}>{short(ca)}</a>}
+          <button onClick={doConnect} style={{ background: account ? "#10b981" : "#6366f1", color: "#fff", border: "none", padding: "0.5rem 1.25rem", borderRadius: "0.5rem", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600 }}>
+            {account ? short(account) : "Connect"}
+          </button>
+        </div>
       </header>
 
-      <section className="hero" id="top">
-        <div className="hero-copy">
-          <p className="eyebrow"><span /> Principal-backed reliability</p>
-          <h1>Uptime promises should carry consequences.</h1>
-          <p className="hero-description">
-            Principals lock a real GEN bond. GenLayer reads immutable incident evidence,
-            interprets the MANDATE, and releases the exact pre-committed payout band.
-          </p>
-          <div className="hero-actions">
-            <a className="primary-link" href="#desk">
-              Open MANDATE desk <ArrowRight size={17} />
-            </a>
-            <span className="network-label">
-              <span className="network-dot" /> Studionet
-            </span>
+      <main style={{ maxWidth: "960px", margin: "0 auto", padding: "2rem" }}>
+        {/* Stats */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "2rem" }}>
+          {[
+            { label: "Mandates", value: stats.mandate_count },
+            { label: "Bonded", value: formatGen(stats.total_bonded) },
+            { label: "Active", value: formatGen(stats.active_bond) },
+            { label: "Paid Out", value: formatGen(stats.total_agent_paid) },
+          ].map((s) => (
+            <div key={s.label} style={{ background: "#12121f", borderRadius: "0.75rem", padding: "1rem", border: "1px solid #1a1a2e" }}>
+              <div style={{ fontSize: "0.7rem", color: "#666", textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</div>
+              <div style={{ fontSize: "1.25rem", fontWeight: 700, color: "#fff", marginTop: "0.25rem" }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Contract address input */}
+        <div style={{ background: "#12121f", borderRadius: "0.75rem", padding: "1.25rem", border: "1px solid #1a1a2e", marginBottom: "1.5rem" }}>
+          <label style={{ fontSize: "0.7rem", color: "#666", textTransform: "uppercase" }}>Contract Address</label>
+          <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+            <input value={contractAddr} onChange={(e) => setContractAddr(e.target.value)} placeholder="0x..." style={{ flex: 1, background: "#0a0a0f", border: "1px solid #2a2a3e", borderRadius: "0.5rem", padding: "0.6rem 0.75rem", color: "#fff", fontSize: "0.85rem", outline: "none" }} />
+            <button onClick={() => { saveContractAddress(contractAddr); sync(); }} style={{ background: "#1e1e2e", color: "#6366f1", border: "1px solid #6366f1", padding: "0.6rem 1rem", borderRadius: "0.5rem", cursor: "pointer", fontSize: "0.8rem" }}>Set</button>
           </div>
         </div>
-        <PulseField
-          service={sla?.title}
-          status={sla?.status}
-          bond={activeBond}
-        />
-      </section>
 
-      <section className="metric-band" aria-label="Live contract metrics">
-        <div><span>Agreements</span><strong>{stats.mandate_count}</strong></div>
-        <div><span>Active custody</span><strong>{formatGen(stats.active_bond)} GEN</strong></div>
-        <div><span>Agent paid</span><strong>{formatGen(stats.total_agent_paid)} GEN</strong></div>
-        <div><span>Principal returned</span><strong>{formatGen(stats.total_principal_refunded)} GEN</strong></div>
-      </section>
-
-      <section className="desk-section" id="desk">
-        <Reveal className="section-heading">
-          <p className="eyebrow"><span /> Live contract workflow</p>
-          <h2>One desk. One valid next action.</h2>
-          <p>
-            The console reads the selected MANDATE and exposes only the action its on-chain
-            state permits.
-          </p>
-        </Reveal>
-
-        <Reveal className="connection-strip">
-          <div>
-            <span className="connection-label">Studionet contract</span>
-            <strong>{address ? short(address, 10, 8) : "Awaiting deployment"}</strong>
+        {/* Stepper */}
+        <div style={{ background: "#12121f", borderRadius: "0.75rem", padding: "1.5rem", border: "1px solid #1a1a2e", marginBottom: "1.5rem" }}>
+          <h2 style={{ fontSize: "0.8rem", color: "#666", textTransform: "uppercase", marginBottom: "1rem" }}>Mandate Lifecycle</h2>
+          <div style={{ display: "flex", gap: "0.25rem" }}>
+            {STEPS.map((step, i) => (
+              <div key={step.key} onClick={() => setActiveStep(step.key)} style={{
+                flex: 1, textAlign: "center", padding: "0.75rem 0.25rem", borderRadius: "0.5rem", cursor: "pointer",
+                background: i <= currentStep ? (i === currentStep ? "#6366f1" : "#1e1e2e") : "#0a0a0f",
+                border: `1px solid ${i <= currentStep ? "#6366f1" : "#1a1a2e"}`,
+                opacity: i <= currentStep ? 1 : 0.4,
+              }}>
+                <div style={{ fontSize: "0.65rem", color: i <= currentStep ? "#fff" : "#444" }}>{step.label}</div>
+                <div style={{ fontSize: "0.55rem", color: "#888", marginTop: "0.25rem" }}>{step.desc}</div>
+              </div>
+            ))}
           </div>
-          <div className="address-controls">
-            <input
-              aria-label="Runtime contract address"
-              value={addressDraft}
-              onChange={(event) => setAddressDraft(event.target.value)}
-              placeholder="0x..."
-            />
-            <button type="button" onClick={useAddress}>
-              <RefreshCw size={16} /> Use & sync
-            </button>
-            {address && (
-              <a
-                href={explorerContract(address)}
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Open contract in Explorer"
-              >
-                <ExternalLink size={16} />
-              </a>
-            )}
+        </div>
+
+        {/* Load mandate */}
+        <div style={{ background: "#12121f", borderRadius: "0.75rem", padding: "1.25rem", border: "1px solid #1a1a2e", marginBottom: "1.5rem" }}>
+          <h2 style={{ fontSize: "0.8rem", color: "#666", textTransform: "uppercase", marginBottom: "1rem" }}>Load Mandate</h2>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <input value={mandateId} onChange={(e) => setMandateId(e.target.value)} placeholder="Mandate ID" style={{ width: "100px", background: "#0a0a0f", border: "1px solid #2a2a3e", borderRadius: "0.5rem", padding: "0.6rem 0.75rem", color: "#fff", fontSize: "0.85rem", outline: "none" }} />
+            <button onClick={loadMandate} style={{ background: "#6366f1", color: "#fff", border: "none", padding: "0.6rem 1.5rem", borderRadius: "0.5rem", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600 }}>Load</button>
           </div>
-        </Reveal>
-
-        <div className="desk-grid">
-          <Reveal className="record-panel">
-            <div className="record-heading">
-              <div>
-                <span>Selected agreement</span>
-                <h3>{sla ? sla.title : "No MANDATE selected"}</h3>
-              </div>
-              <div className="record-loader">
-                <input
-                  aria-label="MANDATE ID"
-                  value={slaId}
-                  onChange={(event) => setSlaId(event.target.value.replace(/\D/g, ""))}
-                />
-                <button type="button" onClick={() => void loadSla()}>
-                  Load
-                </button>
-              </div>
-            </div>
-
-            <div className="status-row">
-              <span className="status-badge">{sla?.status ?? "UNBOUND"}</span>
-              <span>{sla?.decision ?? "PENDING"}</span>
-            </div>
-
-            <div className="record-data">
-              <div><span>Principal</span><strong>{short(sla?.principal ?? "")}</strong></div>
-              <div><span>Agent</span><strong>{short(sla?.agent ?? "")}</strong></div>
-              <div><span>Bond</span><strong>{activeBond} GEN</strong></div>
-              <div>
-                <span>Payout bands</span>
-                <strong>
-                  {sla
-                    ? `${formatGen(sla.partial_pct)} / ${formatGen(sla.partial_pct)} / full`
-                    : "Not locked"}
-                </strong>
-              </div>
-            </div>
-
-            <div className="reason-block">
-              <RadioTower size={18} />
-              <p>{sla?.reason ?? "Set a contract address, then load an agreement or open a new bond."}</p>
-            </div>
-          </Reveal>
-
-          <Reveal className="action-dock">
-            <div className="action-title">
-              <div>
-                <span>Primary action</span>
-                <h3>{actionLabel(activeAction)}</h3>
-              </div>
-              <span className="action-code">{activeAction}</span>
-            </div>
-
-            <div className="action-switcher" aria-label="Contract action selector">
-              {(["OPEN", "BANDS", "ACTIVATE", "DELIVERY", "CHALLENGE", "REVIEW", "SETTLE", "RECOVERY"] as ActionKey[]).map((item) => (
-                <button
-                  type="button"
-                  key={item}
-                  className={activeAction === item ? "active" : ""}
-                  onClick={() => setActiveAction(item)}
-                  title={actionLabel(item)}
-                >
-                  {item.slice(0, 3)}
-                </button>
+          {mandate && (
+            <div style={{ marginTop: "1rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", fontSize: "0.8rem" }}>
+              {[
+                ["Status", mandate.status],
+                ["Decision", mandate.decision],
+                ["Bond", formatGen(mandate.bond)],
+                ["Partial %", mandate.partial_pct + "%"],
+                ["Principal", short(mandate.principal)],
+                ["Agent", short(mandate.agent)],
+              ].map(([k, v]) => (
+                <div key={k}><span style={{ color: "#666" }}>{k}:</span> <span style={{ color: "#fff" }}>{v}</span></div>
               ))}
+              {mandate.reason && <div style={{ gridColumn: "1 / -1", color: "#888", fontSize: "0.75rem", fontStyle: "italic" }}>{mandate.reason}</div>}
             </div>
+          )}
+        </div>
 
-            <div className="form-grid">
-              {activeAction === "OPEN" && (
-                <>
-                  <Field label="Agent wallet" value={agent} onChange={setAgent} placeholder="0x..." />
-                  <Field label="Service name" value={service} onChange={setService} placeholder="Production API" />
-                  <Field label="Immutable MANDATE terms" value={termsUrl} onChange={setTermsUrl} placeholder="https://arweave.net/..." wide />
-                  <Field label="Terms commitment" value={termsCommitment} onChange={setTermsCommitment} placeholder="content:..." wide />
-                  <Field label="Principal status origin" value={statusOrigin} onChange={setStatusOrigin} placeholder="https://status.vendor.com" />
-                  <Field label="Independent monitor origin" value={monitorOrigin} onChange={setMonitorOrigin} placeholder="https://monitor.example.org" />
-                  <Field label="Principal bond (GEN)" value={bond} onChange={setBond} type="number" />
-                </>
-              )}
-              {activeAction === "BANDS" && (
-                <>
-                  <Field label="Minor payout (GEN)" value={minor} onChange={setMinor} type="number" />
-                  <Field label="Major payout (GEN)" value={major} onChange={setMajor} type="number" />
-                </>
-              )}
-              {activeAction === "DELIVERY" && (
-                <>
-                  <label className="field field-wide">
-                    <span>Incident window and observed impact</span>
-                    <textarea value={windowNote} onChange={(event) => setWindowNote(event.target.value)} />
-                  </label>
-                  <Field label="Monitor snapshot" value={monitorSnapshot} onChange={setMonitorSnapshot} placeholder="https://ipfs.io/ipfs/..." />
-                  <Field label="Monitor commitment" value={monitorCommitment} onChange={setMonitorCommitment} placeholder="content:..." />
-                  <Field label="Status snapshot" value={statusSnapshot} onChange={setStatusSnapshot} placeholder="https://arweave.net/..." />
-                  <Field label="Status commitment" value={statusCommitment} onChange={setStatusCommitment} placeholder="content:..." />
-                </>
-              )}
-              {activeAction === "CHALLENGE" && (
-                <>
-                  <Field label="Principal incident snapshot" value={principalSnapshot} onChange={setPrincipalSnapshot} placeholder="https://arweave.net/..." wide />
-                  <Field label="Principal commitment" value={principalCommitment} onChange={setPrincipalCommitment} placeholder="content:..." wide />
-                  <label className="field field-wide">
-                    <span>Principal response</span>
-                    <textarea value={principalNote} onChange={(event) => setPrincipalNote(event.target.value)} />
-                  </label>
-                  <button className="quiet-inline" type="button" onClick={() => setActiveAction("CLOSE")}>
-                    Response window expired? Use timeout path
-                  </button>
-                </>
-              )}
-              {["ACTIVATE", "CLOSE", "REVIEW", "SETTLE", "RECOVERY", "TIMEOUT"].includes(activeAction) && (
-                <div className="confirmation-copy">
-                  <ShieldCheck size={24} />
-                  <p>
-                    This action uses MANDATE #{slaId || "0"} and the connected wallet.
-                    The contract will enforce role, state, deadline, and custody rules.
-                  </p>
-                </div>
-              )}
-              {activeAction === "REVIEW" && (
-                <button className="quiet-inline" type="button" onClick={() => setActiveAction("RECOVERY")}>
-                  Jury cannot reach consensus? Approve mutual bond recovery
-                </button>
-              )}
-              {activeAction === "RECOVERY" && (
-                <button className="quiet-inline" type="button" onClick={() => setActiveAction("TIMEOUT")}>
-                  Recovery deadline elapsed? Claim the neutral principal refund
-                </button>
-              )}
+        {/* Actions */}
+        {activeStep === "OPEN" && (
+          <div style={{ background: "#12121f", borderRadius: "0.75rem", padding: "1.5rem", border: "1px solid #1a1a2e" }}>
+            <h2 style={{ fontSize: "0.9rem", color: "#6366f1", marginBottom: "1rem" }}>Post New Mandate</h2>
+            <div style={{ display: "grid", gap: "0.75rem" }}>
+              <Field label="Agent Wallet" v={agentAddr} set={setAgentAddr} ph="0x..." />
+              <Field label="Mandate Title" v={title} set={setTitle} ph="What needs to be done" />
+              <Field label="Brief URL (IPFS/Arweave)" v={briefUrl} set={setBriefUrl} ph="https://arweave.net/..." />
+              <Field label="Brief Commitment" v={briefCommit} set={setBriefCommit} ph="content:..." />
+              <Field label="Evidence Origin URL" v={evidenceUrl} set={setEvidenceUrl} ph="https://arweave.net/..." />
+              <Field label="Evidence Commitment" v={evidenceCommit} set={setEvidenceCommit} ph="content:..." />
+              <Field label="Bond (GEN)" v={bondAmount} set={setBondAmount} ph="1" />
+              <button onClick={() => wr("open_mandate", [agentAddr, title, briefUrl, briefCommit, evidenceUrl, evidenceCommit], parseGen(bondAmount))} disabled={loading || !account} style={btnStyle}>
+                {loading ? "Signing…" : "Post Mandate + Bond"}
+              </button>
             </div>
+          </div>
+        )}
 
-            {notice && (
-              <div className={notice.success ? "notice success" : "notice error"}>
-                <span>{notice.success ? <CheckCircle2 size={17} /> : <Siren size={17} />}</span>
-                <div>
-                  <strong>{notice.success ? "On-chain response" : "Action stopped"}</strong>
-                  <p>{String(notice.data ?? notice.error ?? "No details returned.")}</p>
-                  {notice.hash && (
-                    <a href={explorerTx(notice.hash)} target="_blank" rel="noreferrer">
-                      View transaction <ExternalLink size={13} />
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <button className="primary-action" type="button" onClick={runAction} disabled={busy}>
-              {busy ? <LoaderCircle className="spin" size={18} /> : <CircleDollarSign size={18} />}
-              {busy ? "Waiting for ACCEPTED" : actionLabel(activeAction)}
-              {!busy && <ArrowRight size={18} />}
+        {activeStep === "BANDS" && (
+          <ActionCard title="Lock Partial Band">
+            <Field label="Partial %" v={partialPct} set={setPartialPct} ph="50" />
+            <p style={{ fontSize: "0.7rem", color: "#666" }}>Agent gets this % on PARTIAL verdict. Principal gets remainder.</p>
+            <button onClick={() => wr("lock_partial_band", [parseInt(mandateId), parseInt(partialPct)])} disabled={loading || !account} style={btnStyle}>
+              {loading ? "Signing…" : "Lock Band"}
             </button>
-          </Reveal>
-        </div>
-      </section>
+          </ActionCard>
+        )}
 
-      <section className="evidence-section" id="evidence">
-        <Reveal className="section-heading">
-          <p className="eyebrow"><span /> Evidence roles</p>
-          <h2>Mutable pages inform. Immutable snapshots decide.</h2>
-        </Reveal>
-        <div className="evidence-grid">
-          {[
-            {
-              icon: <FileLock2 />,
-              label: "MANDATE terms",
-              copy: "Principal locks the exact uptime threshold, incident window, and band definitions before acceptance.",
-            },
-            {
-              icon: <Gauge />,
-              label: "Independent monitor",
-              copy: "Agent binds a content-addressed outage snapshot to the exact agreement and incident.",
-            },
-            {
-              icon: <CloudCog />,
-              label: "Principal status",
-              copy: "The principal may answer with its own immutable incident record inside a bounded response window.",
-            },
-          ].map((item, index) => (
-            <Reveal className="evidence-item" key={item.label}>
-              <span className="evidence-index">0{index + 1}</span>
-              <div className="evidence-icon">{item.icon}</div>
-              <h3>{item.label}</h3>
-              <p>{item.copy}</p>
-            </Reveal>
-          ))}
-        </div>
-      </section>
+        {activeStep === "ACCEPT" && (
+          <ActionCard title="Accept Mandate">
+            <p style={{ fontSize: "0.8rem", color: "#888" }}>Accept this mandate and start the delivery window.</p>
+            <button onClick={() => wr("accept_mandate", [parseInt(mandateId)])} disabled={loading || !account} style={btnStyle}>
+              {loading ? "Signing…" : "Accept Mandate"}
+            </button>
+          </ActionCard>
+        )}
 
-      <section className="how-section" id="how">
-        <Reveal className="how-intro">
-          <p className="eyebrow"><span /> How it works</p>
-          <h2>Five states from promise to consequence.</h2>
-          <p>
-            The AI never invents an amount. It interprets evidence and selects one
-            economic band that both parties locked beforehand.
-          </p>
-        </Reveal>
-        <div className="lifecycle">
-          {[
-            ["01", "Bond", "Principal funds real GEN custody and names one agent."],
-            ["02", "Accept", "Agent accepts immutable terms and fixed payout bands."],
-            ["03", "Capture", "Incident evidence is frozen by role and content identifier."],
-            ["04", "Judge", "GenLayer validators agree on the substantive breach band."],
-            ["05", "Settle", "Contract pays once, conserves value, and closes the MANDATE."],
-          ].map(([number, title, copy]) => (
-            <Reveal className="lifecycle-step" key={number}>
-              <span>{number}</span>
-              <h3>{title}</h3>
-              <p>{copy}</p>
-            </Reveal>
-          ))}
-        </div>
-      </section>
+        {activeStep === "DELIVER" && (
+          <ActionCard title="Submit Deliverable">
+            <Field label="Delivery Note" v={deliveryNote} set={setDeliveryNote} ph="Describe what you delivered…" wide />
+            <Field label="Delivery Snapshot URL" v={deliveryUrl} set={setDeliveryUrl} ph="https://arweave.net/..." />
+            <Field label="Delivery Commitment" v={deliveryCommit} set={setDeliveryCommit} ph="content:..." />
+            <button onClick={() => wr("submit_deliverable", [parseInt(mandateId), deliveryNote, deliveryUrl, deliveryCommit])} disabled={loading || !account} style={btnStyle}>
+              {loading ? "Signing…" : "Submit Deliverable"}
+            </button>
+          </ActionCard>
+        )}
 
-      <footer>
-        <div className="brand">
-          <span className="brand-mark"><Activity size={18} /></span>
-          <span>AgentTask</span>
-        </div>
-        <p>Reliability adjudication and real MANDATE custody on GenLayer.</p>
-        <button type="button" onClick={() => {
-          saveContractAddress("");
-          setAddress("");
-          setAddressDraft("");
-          setSla(null);
-          setStats(emptyStats);
-        }}>
-          <RotateCcw size={15} /> Clear runtime address
-        </button>
-      </footer>
-    </main>
+        {activeStep === "CHALLENGE" && (
+          <ActionCard title="Challenge or Review">
+            <p style={{ fontSize: "0.8rem", color: "#888", marginBottom: "1rem" }}>If delivery is unsatisfactory, submit counter-evidence. Otherwise, close the review window.</p>
+            <Field label="Counter-Evidence URL" v={counterUrl} set={setCounterUrl} ph="https://arweave.net/..." />
+            <Field label="Counter Commitment" v={counterCommit} set={setCounterCommit} ph="content:..." />
+            <Field label="Counter Note" v={counterNote} set={setCounterNote} ph="Why the delivery fails…" wide />
+            <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+              <button onClick={() => wr("challenge_deliverable", [parseInt(mandateId), counterUrl, counterCommit, counterNote])} disabled={loading || !account} style={{ ...btnStyle, background: "#ef4444" }}>
+                {loading ? "Signing…" : "Challenge"}
+              </button>
+              <button onClick={() => wr("close_review", [parseInt(mandateId)])} disabled={loading || !account} style={{ ...btnStyle, background: "#10b981" }}>
+                {loading ? "Signing…" : "Close Review (no challenge)"}
+              </button>
+            </div>
+          </ActionCard>
+        )}
+
+        {activeStep === "ADJUDICATE" && (
+          <ActionCard title="Run AI Adjudication">
+            <p style={{ fontSize: "0.8rem", color: "#888" }}>3 validators independently fetch evidence and judge delivery. Real bond value depends on the ruling.</p>
+            <button onClick={() => wr("adjudicate", [parseInt(mandateId)])} disabled={loading || !account} style={btnStyle}>
+              {loading ? "Adjudicating…" : "Run Jury"}
+            </button>
+          </ActionCard>
+        )}
+
+        {activeStep === "SETTLE" && (
+          <ActionCard title="Settle or Recover">
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              <button onClick={() => wr("settle", [parseInt(mandateId)])} disabled={loading || !account} style={btnStyle}>
+                {loading ? "Signing…" : "Settle Bond"}
+              </button>
+              <button onClick={() => wr("approve_recovery", [parseInt(mandateId)])} disabled={loading || !account} style={{ ...btnStyle, background: "#f59e0b" }}>
+                Approve Recovery
+              </button>
+              <button onClick={() => wr("claim_recovery_timeout", [parseInt(mandateId)])} disabled={loading || !account} style={{ ...btnStyle, background: "#6b7280" }}>
+                Claim Timeout
+              </button>
+            </div>
+          </ActionCard>
+        )}
+
+        {/* TX result */}
+        {tx.hash && (
+          <div style={{ marginTop: "1.5rem", background: tx.success ? "#064e3b" : "#450a0a", borderRadius: "0.75rem", padding: "1rem", border: `1px solid ${tx.success ? "#10b981" : "#ef4444"}` }}>
+            <div style={{ fontSize: "0.8rem", color: tx.success ? "#34d399" : "#f87171" }}>{tx.success ? "Transaction Confirmed" : tx.error || "Transaction Failed"}</div>
+            {tx.hash && <a href={explorerTx(tx.hash)} target="_blank" rel="noopener" style={{ fontSize: "0.75rem", color: "#6366f1", display: "block", marginTop: "0.5rem" }}>View on Explorer →</a>}
+          </div>
+        )}
+      </main>
+    </div>
   );
 }
+
+function Field({ label, v, set, ph, wide }: { label: string; v: string; set: (s: string) => void; ph: string; wide?: boolean }) {
+  return (
+    <div>
+      <label style={{ fontSize: "0.7rem", color: "#666", textTransform: "uppercase", display: "block", marginBottom: "0.25rem" }}>{label}</label>
+      {wide ? (
+        <textarea value={v} onChange={(e) => set(e.target.value)} placeholder={ph} rows={3} style={{ width: "100%", background: "#0a0a0f", border: "1px solid #2a2a3e", borderRadius: "0.5rem", padding: "0.6rem 0.75rem", color: "#fff", fontSize: "0.85rem", outline: "none", resize: "vertical" }} />
+      ) : (
+        <input value={v} onChange={(e) => set(e.target.value)} placeholder={ph} style={{ width: "100%", background: "#0a0a0f", border: "1px solid #2a2a3e", borderRadius: "0.5rem", padding: "0.6rem 0.75rem", color: "#fff", fontSize: "0.85rem", outline: "none" }} />
+      )}
+    </div>
+  );
+}
+
+function ActionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ background: "#12121f", borderRadius: "0.75rem", padding: "1.5rem", border: "1px solid #1a1a2e" }}>
+      <h2 style={{ fontSize: "0.9rem", color: "#6366f1", marginBottom: "1rem" }}>{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+const btnStyle: React.CSSProperties = {
+  background: "#6366f1",
+  color: "#fff",
+  border: "none",
+  padding: "0.75rem 1.5rem",
+  borderRadius: "0.5rem",
+  cursor: "pointer",
+  fontSize: "0.85rem",
+  fontWeight: 600,
+  marginTop: "0.5rem",
+};
