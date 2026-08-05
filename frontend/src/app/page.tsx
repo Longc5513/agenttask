@@ -15,37 +15,73 @@ import {
 import type { ContractStats, MandateRecord, TxResult } from "@/lib/types";
 
 // Pixel Character Component
-function PixelCharacter({ step, message }: { step: number; message: string }) {
+function PixelCharacter({ step }: { step: number }) {
+  const [speaking, setSpeaking] = useState(false);
+  const [volume, setVolume] = useState(true);
+
   const messages = [
-    "Hi! I'm AgentBot! Let me show you how this works!",
-    "First, create TWO wallets — one for you, one for your worker!",
-    "Now connect your Principal wallet!",
-    "Time to post a mandate and bond some GEN!",
-    "Set the partial band — how much does the agent get if partial?",
-    "Switch wallets! Connect the Agent wallet now!",
-    "Agent accepts the mandate — 30 days to deliver!",
-    "Submit your deliverable with proof on Arweave!",
-    "Switch back to Principal wallet!",
-    "Review the delivery — accept or challenge!",
-    "Run the AI jury — 3 validators judge independently!",
-    "Settle the bond — winner gets paid!",
+    "Hi! I'm AgentBot! Let me show you how AgentTask works!",
+    "First, create TWO wallets — one for you as Principal, one for your worker as Agent!",
+    "Now click Connect Wallet and select your Principal wallet!",
+    "Time to post a mandate! Fill in the Agent wallet address, task title, and bond some GEN tokens!",
+    "Set the partial band — this determines how much the agent gets if the verdict is partial!",
+    "Switch wallets! Disconnect Principal and connect the Agent wallet to accept the mandate!",
+    "Agent accepts the mandate — now there's a 30 day window to deliver the work!",
+    "Submit your deliverable! Upload proof to Arweave and paste the link here!",
+    "Switch back to the Principal wallet to review what the agent delivered!",
+    "Review the delivery — if it's good, close the review. If not, submit counter evidence and challenge!",
+    "Run the AI jury! Three validators independently fetch evidence and judge the delivery!",
+    "Settle the bond! If fulfilled, the agent gets everything. If rejected, the principal gets refunded!",
   ];
+
+  const speak = (text: string) => {
+    if (!volume || typeof window === 'undefined' || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.9;
+    utterance.pitch = 1.1;
+    utterance.volume = 0.8;
+    utterance.onstart = () => setSpeaking(true);
+    utterance.onend = () => setSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  useEffect(() => {
+    if (volume) {
+      const timer = setTimeout(() => speak(messages[step] || messages[0]), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [step, volume]);
+
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem", padding: "1rem", background: "linear-gradient(135deg, #1a1a2e, #2a2a3e)", borderRadius: "1rem", border: "2px solid #6366f1" }}>
-      <div className="pixel-float" style={{ width: "48px", height: "48px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: "40px", height: "40px", background: "#fbbf24", borderRadius: "8px 8px 4px 4px", position: "relative", boxShadow: "0 0 10px rgba(251, 191, 36, 0.3)" }}>
-          <div style={{ position: "absolute", top: "10px", left: "8px", width: "6px", height: "6px", background: "#1a1a2e", borderRadius: "50%" }} />
-          <div style={{ position: "absolute", top: "10px", right: "8px", width: "6px", height: "6px", background: "#1a1a2e", borderRadius: "50%" }} />
-          <div style={{ position: "absolute", bottom: "8px", left: "50%", transform: "translateX(-50%)", width: "12px", height: "4px", background: "#1a1a2e", borderRadius: "2px" }} />
-        </div>
+    <div style={{ display: "flex", alignItems: "center", gap: "1.25rem", marginBottom: "1.5rem", padding: "1.25rem", background: "linear-gradient(135deg, #0f172a, #1e1b4b)", borderRadius: "1rem", border: "2px solid #6366f1", position: "relative", overflow: "hidden" }}>
+      {/* Background sparkle */}
+      <div style={{ position: "absolute", top: "10px", right: "20px", fontSize: "0.75rem", opacity: 0.3 }}>✨</div>
+      <div style={{ position: "absolute", bottom: "10px", left: "20px", fontSize: "0.75rem", opacity: 0.3 }}>⭐</div>
+
+      {/* Robot Image */}
+      <div className={speaking ? "animate-pulse" : "pixel-float"} style={{ width: "80px", height: "80px", flexShrink: 0, borderRadius: "1rem", overflow: "hidden", border: "2px solid #6366f1", boxShadow: speaking ? "0 0 20px rgba(99, 102, 241, 0.5)" : "0 0 10px rgba(99, 102, 241, 0.2)", transition: "box-shadow 0.3s" }}>
+        <img src="/agentbot.png" alt="AgentBot" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       </div>
+
+      {/* Text Content */}
       <div className="slide-up" style={{ flex: 1 }}>
-        <div style={{ fontSize: "0.75rem", color: "#fbbf24", fontWeight: 700, marginBottom: "0.25rem" }}>AgentBot</div>
-        <div style={{ fontSize: "0.85rem", color: "#fff", lineHeight: 1.4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+          <span style={{ fontSize: "0.85rem", color: "#60a5fa", fontWeight: 700 }}>🤖 AgentBot</span>
+          {speaking && <span style={{ fontSize: "0.6rem", color: "#10b981", background: "#10b98120", padding: "0.15rem 0.4rem", borderRadius: "999px" }}>● Speaking</span>}
+          <button onClick={() => {
+            setVolume(!volume);
+            if (!volume) speak(messages[step] || messages[0]);
+            else window.speechSynthesis?.cancel();
+          }} style={{ marginLeft: "auto", background: volume ? "#6366f1" : "#374151", color: "#fff", border: "none", padding: "0.35rem 0.75rem", borderRadius: "0.35rem", cursor: "pointer", fontSize: "0.7rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+            {volume ? "🔊" : "🔇"} {volume ? "Voice On" : "Voice Off"}
+          </button>
+        </div>
+        <div style={{ fontSize: "0.9rem", color: "#e2e8f0", lineHeight: 1.5 }}>
           {messages[step] || messages[0]}
         </div>
+        <div style={{ fontSize: "0.65rem", color: "#4b5563", marginTop: "0.5rem" }}>Step {step + 1} of 11 • Click steps below to navigate</div>
       </div>
-      <div className="sparkle" style={{ fontSize: "1.5rem" }}>✨</div>
     </div>
   );
 }
@@ -268,7 +304,7 @@ export default function Page() {
             </div>
 
             {/* Pixel Character Guide */}
-            <PixelCharacter step={currentStep} message="" />
+            <PixelCharacter step={currentStep} />
 
             {/* Visual Flow Diagram */}
             <div className="animate-fade-in" style={{ display: "flex", justifyContent: "center", gap: "0.5rem", marginBottom: "2rem", flexWrap: "wrap" }}>
