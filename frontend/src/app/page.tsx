@@ -342,6 +342,62 @@ export default function Page() {
             {tx.hash && <a href={explorerTx(tx.hash)} target="_blank" rel="noopener" style={{ fontSize: "0.7rem", color: "#6366f1" }}>Explorer →</a>}
           </div>
         )}
+
+        {/* Evidence Roles */}
+        <section style={{ marginTop: "3rem" }}>
+          <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+            <p style={{ fontSize: "0.65rem", color: "#4b5563", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.5rem" }}>Evidence Roles</p>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#fff", margin: 0 }}>Mutable pages inform. Immutable snapshots decide.</h2>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem" }}>
+            {[
+              { num: "01", label: "Mandate Brief", copy: "Principal locks the exact deliverables, acceptance criteria, and partial band definitions before the agent accepts." },
+              { num: "02", label: "Delivery Snapshot", copy: "Agent binds a content-addressed proof-of-work to the exact mandate and delivery window." },
+              { num: "03", label: "Counter-Evidence", copy: "The principal may answer with its own immutable rejection record inside a bounded review window." },
+            ].map((item) => (
+              <div key={item.num} style={{ background: "#111118", borderRadius: "0.75rem", padding: "1.5rem", border: "1px solid #1e1e2e" }}>
+                <span style={{ fontSize: "0.65rem", color: "#6366f1", fontFamily: "monospace" }}>{item.num}</span>
+                <h3 style={{ fontSize: "0.9rem", color: "#fff", margin: "0.5rem 0" }}>{item.label}</h3>
+                <p style={{ fontSize: "0.75rem", color: "#6b7280", margin: 0, lineHeight: 1.5 }}>{item.copy}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* How It Works */}
+        <section style={{ marginTop: "3rem", marginBottom: "2rem" }}>
+          <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+            <p style={{ fontSize: "0.65rem", color: "#4b5563", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.5rem" }}>How It Works</p>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#fff", margin: 0 }}>Seven states from bond to settlement.</h2>
+            <p style={{ fontSize: "0.8rem", color: "#6b7280", marginTop: "0.5rem" }}>The AI never invents an amount. It interprets evidence and selects one outcome that both parties locked beforehand.</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "0.5rem" }}>
+            {[
+              ["01", "Post", "Principal funds real GEN custody and names one agent."],
+              ["02", "Lock", "Principal sets the partial completion band."],
+              ["03", "Accept", "Agent accepts immutable brief and evidence origin."],
+              ["04", "Deliver", "Agent submits proof-of-work as immutable snapshot."],
+              ["05", "Challenge", "Principal reviews and may submit counter-evidence."],
+              ["06", "Judge", "GenLayer validators agree on the substantive outcome."],
+              ["07", "Settle", "Contract pays once, conserves value, and closes."],
+            ].map(([number, title, copy]) => (
+              <div key={number} style={{ background: "#111118", borderRadius: "0.5rem", padding: "1rem 0.75rem", border: "1px solid #1e1e2e", textAlign: "center" }}>
+                <span style={{ fontSize: "0.6rem", color: "#6366f1", fontFamily: "monospace" }}>{number}</span>
+                <h3 style={{ fontSize: "0.8rem", color: "#fff", margin: "0.4rem 0" }}>{title}</h3>
+                <p style={{ fontSize: "0.6rem", color: "#6b7280", margin: 0, lineHeight: 1.4 }}>{copy}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer style={{ borderTop: "1px solid #1a1a2e", padding: "1.5rem 0", marginTop: "2rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#6366f1" }}>AgentTask</span>
+            <span style={{ fontSize: "0.7rem", color: "#4b5563", marginLeft: "0.5rem" }}>Bonded mandate lifecycle on GenLayer.</span>
+          </div>
+          <button onClick={() => { saveContractAddress(""); window.location.reload(); }} style={{ background: "transparent", color: "#4b5563", border: "1px solid #1e1e2e", padding: "0.35rem 0.75rem", borderRadius: "0.35rem", cursor: "pointer", fontSize: "0.7rem" }}>Clear runtime address</button>
+        </footer>
       </main>
     </div>
   );
