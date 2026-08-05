@@ -36,7 +36,7 @@ type RuntimeClient = {
 };
 
 const STORAGE_KEY = "agenttask.contract.v1";
-const envAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "";
+const envAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x33E354284635b4462Eb3e9491923D7EC259a7712";
 const readClient = createClient({
   chain: studionet,
   account: createAccount(),
