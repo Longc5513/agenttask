@@ -318,6 +318,10 @@ export default function Page() {
 
               {selected && nextAction(selected.status) === "ACCEPT" && (
                 <div>
+                  <div style={{ background: "#1e1e2e", borderRadius: "0.5rem", padding: "0.75rem 1rem", marginBottom: "1rem", border: "1px solid #2a2a3e" }}>
+                    <p style={{ fontSize: "0.75rem", color: "#f59e0b", margin: "0 0 0.5rem", fontWeight: 600 }}>⚠ Only the Agent wallet can accept</p>
+                    <p style={{ fontSize: "0.7rem", color: "#9ca3af", margin: 0 }}>Connect with wallet: <span style={{ color: "#6366f1", fontFamily: "monospace" }}>{short(selected.agent, 10, 8)}</span></p>
+                  </div>
                   <p style={{ fontSize: "0.8rem", color: "#9ca3af", marginBottom: "1rem" }}>Accept this mandate. Delivery window: 30 days.</p>
                   <button onClick={() => wr("accept_mandate", [parseInt(mandateId)])} disabled={loading || !account} style={btn}>{loading ? "Signing…" : "Accept Mandate"}</button>
                 </div>
@@ -347,7 +351,7 @@ export default function Page() {
 
               {selected && nextAction(selected.status) === "ADJUDICATE" && (
                 <div>
-                  <p style={{ fontSize: "0.75rem", color: "#9ca3af", marginBottom: "1rem" }}>3 validators independently fetch evidence and judge delivery.</p>
+                  <p style={{ fontSize: "0.75rem", color: "#9ca3af", marginBottom: "1rem" }}>Either party can trigger AI adjudication. 3 validators fetch evidence independently.</p>
                   <button onClick={() => wr("adjudicate", [parseInt(mandateId)])} disabled={loading || !account} style={btn}>{loading ? "Adjudicating…" : "Run AI Jury"}</button>
                 </div>
               )}
@@ -415,7 +419,7 @@ export default function Page() {
               ["02", "Lock", "Principal sets the partial completion band."],
               ["03", "Accept", "Agent accepts immutable brief and evidence origin."],
               ["04", "Deliver", "Agent submits proof-of-work as immutable snapshot."],
-              ["05", "Challenge", "Principal reviews and may submit counter-evidence."],
+              ["05", "Challenge", "Principal reviews. Only Principal wallet can challenge."],
               ["06", "Judge", "GenLayer validators agree on the substantive outcome."],
               ["07", "Settle", "Contract pays once, conserves value, and closes."],
             ].map(([number, title, copy]) => (
