@@ -117,7 +117,33 @@ export default function Page() {
     const r = await writeContract(fn, args, value);
     setLoading(false);
     setTx(r);
-    if (r.success) setTimeout(sync, 5000);
+    if (r.success) {
+      setTimeout(async () => {
+        await sync();
+        // Auto-load mandate after write
+        if (fn === "open_mandate") {
+          const statsR = await readContract("get_stats", []);
+          if (statsR?.success && statsR.data) {
+            const st = parseJson<ContractStats>(statsR.data);
+            const newId = parseInt(st.mandate_count) - 1;
+            if (newId >= 0) {
+              setMandateId(String(newId));
+              const mr = await readContract("get_mandate", [newId]);
+              if (mr?.success && mr.data) {
+                setSelected(parseJson<MandateRecord>(mr.data));
+                setTab("action");
+              }
+            }
+          }
+        } else {
+          // Reload current mandate
+          const mr = await readContract("get_mandate", [parseInt(mandateId)]);
+          if (mr?.success && mr.data) {
+            setSelected(parseJson<MandateRecord>(mr.data));
+          }
+        }
+      }, 5000);
+    }
   };
 
   const loadMandate = async () => {
@@ -128,8 +154,11 @@ export default function Page() {
         const m = parseJson<MandateRecord>(r.data);
         setSelected(m);
         setTab("action");
+      } else {
+        setSelected(null);
+        setTx({ success: false, error: r?.error || "Mandate not found" });
       }
-    } catch { setSelected(null); }
+    } catch { setSelected(null); setTx({ success: false, error: "Failed to load mandate" }); }
   };
 
   const nextAction = (status?: string) => {
