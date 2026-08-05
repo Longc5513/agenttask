@@ -246,7 +246,7 @@ export default function Page() {
 
         {/* Tabs */}
         <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
-          {(["ledger", "action", "guide"] as const).map((t) => (
+          {(["guide", "ledger", "action"] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)} style={{
               background: tab === t ? "#6366f1" : "transparent",
               color: tab === t ? "#fff" : "#6b7280",
