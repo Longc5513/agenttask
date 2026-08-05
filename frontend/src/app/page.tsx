@@ -347,7 +347,7 @@ export default function Page() {
         <section style={{ marginTop: "3rem" }}>
           <div style={{ textAlign: "center", marginBottom: "2rem" }}>
             <p style={{ fontSize: "0.65rem", color: "#4b5563", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.5rem" }}>Evidence Roles</p>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#fff", margin: 0 }}>Mutable pages inform. Immutable snapshots decide.</h2>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#fff", margin: 0 }}>Content-addressed evidence drives every ruling.</h2>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem" }}>
             {[
