@@ -293,7 +293,16 @@ export default function Page() {
                   <F label="Evidence Origin URL" v={evidenceUrl} set={setEvidenceUrl} ph="https://arweave.net/..." />
                   <F label="Evidence Commitment" v={evidenceCommit} set={setEvidenceCommit} ph="content:..." />
                   <F label="Bond (GEN)" v={bondAmount} set={setBondAmount} ph="1" />
-                  <button onClick={() => wr("open_mandate", [agentAddr, title, briefUrl, briefCommit, evidenceUrl, evidenceCommit], parseGen(bondAmount))} disabled={loading || !account} style={btn}>
+                  <button onClick={() => {
+                    if (!agentAddr || agentAddr.length < 42) { setTx({ success: false, error: "Invalid agent wallet address" }); return; }
+                    if (!title || title.length < 4) { setTx({ success: false, error: "Title must be at least 4 characters" }); return; }
+                    if (!briefUrl || !briefUrl.startsWith("https://")) { setTx({ success: false, error: "Brief URL must start with https://" }); return; }
+                    if (!briefCommit || !briefCommit.startsWith("content:")) { setTx({ success: false, error: "Brief commitment must start with content:" }); return; }
+                    if (!evidenceUrl || !evidenceUrl.startsWith("https://")) { setTx({ success: false, error: "Evidence URL must start with https://" }); return; }
+                    if (!evidenceCommit || !evidenceCommit.startsWith("content:")) { setTx({ success: false, error: "Evidence commitment must start with content:" }); return; }
+                    if (!bondAmount || parseFloat(bondAmount) <= 0) { setTx({ success: false, error: "Bond must be greater than 0" }); return; }
+                    wr("open_mandate", [agentAddr, title, briefUrl, briefCommit, evidenceUrl, evidenceCommit], parseGen(bondAmount));
+                  }} disabled={loading || !account} style={btn}>
                     {loading ? "Signing…" : "Post Mandate + Bond"}
                   </button>
                 </div>
