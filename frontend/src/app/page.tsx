@@ -49,8 +49,8 @@ const emptyStats: ContractStats = {
   mandate_count: "0",
   total_bonded: "0",
   active_bond: "0",
-  agent_paid: "0",
-  principal_refunded: "0",
+  total_agent_paid: "0",
+  total_principal_refunded: "0",
 };
 
 function parseJson<T>(value: unknown): T {
@@ -156,10 +156,10 @@ export default function Home() {
     }
     try {
       const record = parseJson<MandateRecord>(result.data);
-      if (!record.id && record.id !== "0") throw new Error("MANDATE was not found.");
+      if (!record.mandate_id && record.mandate_id !== "0") throw new Error("MANDATE was not found.");
       setSla(record);
       setActiveAction(nextAction(record.status));
-      setNotice({ success: true, data: `MANDATE #${record.id} received from Studionet.` });
+      setNotice({ success: true, data: `MANDATE #${record.mandate_id} received from Studionet.` });
     } catch (error) {
       setNotice({
         success: false,
@@ -321,7 +321,7 @@ export default function Home() {
           </div>
         </div>
         <PulseField
-          service={sla?.service}
+          service={sla?.title}
           status={sla?.status}
           bond={activeBond}
         />
@@ -330,8 +330,8 @@ export default function Home() {
       <section className="metric-band" aria-label="Live contract metrics">
         <div><span>Agreements</span><strong>{stats.mandate_count}</strong></div>
         <div><span>Active custody</span><strong>{formatGen(stats.active_bond)} GEN</strong></div>
-        <div><span>Agent paid</span><strong>{formatGen(stats.agent_paid)} GEN</strong></div>
-        <div><span>Principal returned</span><strong>{formatGen(stats.principal_refunded)} GEN</strong></div>
+        <div><span>Agent paid</span><strong>{formatGen(stats.total_agent_paid)} GEN</strong></div>
+        <div><span>Principal returned</span><strong>{formatGen(stats.total_principal_refunded)} GEN</strong></div>
       </section>
 
       <section className="desk-section" id="desk">
@@ -377,7 +377,7 @@ export default function Home() {
             <div className="record-heading">
               <div>
                 <span>Selected agreement</span>
-                <h3>{sla ? sla.service : "No MANDATE selected"}</h3>
+                <h3>{sla ? sla.title : "No MANDATE selected"}</h3>
               </div>
               <div className="record-loader">
                 <input
@@ -404,7 +404,7 @@ export default function Home() {
                 <span>Payout bands</span>
                 <strong>
                   {sla
-                    ? `${formatGen(sla.partial_pct)} / ${formatGen(sla.partial_band)} / full`
+                    ? `${formatGen(sla.partial_pct)} / ${formatGen(sla.partial_pct)} / full`
                     : "Not locked"}
                 </strong>
               </div>
