@@ -11,3 +11,4 @@ __pycache__/
 *.py[cod]
 docs/live-evidence/*.json
 !docs/live-evidence/README.md
+.vercel
