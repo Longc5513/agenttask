@@ -61,7 +61,7 @@ export default function Page() {
   const [mandateId, setMandateId] = useState("0");
   const [tx, setTx] = useState<TxResult>({ success: true });
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState<"ledger" | "action">("ledger");
+  const [tab, setTab] = useState<"ledger" | "action" | "guide">("ledger");
 
   // Form fields
   const [agentAddr, setAgentAddr] = useState("");
@@ -210,15 +210,64 @@ export default function Page() {
 
         {/* Tabs */}
         <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
-          {(["ledger", "action"] as const).map((t) => (
+          {(["ledger", "action", "guide"] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)} style={{
               background: tab === t ? "#6366f1" : "transparent",
               color: tab === t ? "#fff" : "#6b7280",
               border: `1px solid ${tab === t ? "#6366f1" : "#1e1e2e"}`,
               padding: "0.5rem 1.25rem", borderRadius: "0.5rem", cursor: "pointer", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase",
-            }}>{t === "ledger" ? "Mandate Ledger" : "Actions"}</button>
+            }}>{t === "ledger" ? "Mandate Ledger" : t === "action" ? "Actions" : "Step-by-Step Guide"}</button>
           ))}
         </div>
+
+        {tab === "guide" && (
+          <div style={{ background: "#111118", borderRadius: "0.75rem", padding: "2rem", border: "1px solid #1e1e2e" }}>
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#fff", marginBottom: "1.5rem", textAlign: "center" }}>How to Use AgentTask — Step by Step</h2>
+            
+            <div style={{ marginBottom: "2rem" }}>
+              <div style={{ background: "#1e1e2e", borderRadius: "0.5rem", padding: "1rem", marginBottom: "1rem", border: "1px solid #2a2a3e" }}>
+                <h3 style={{ fontSize: "0.9rem", color: "#f59e0b", margin: "0 0 0.5rem" }}>⚠ Before You Start</h3>
+                <p style={{ fontSize: "0.8rem", color: "#9ca3af", margin: 0 }}>You need <strong style={{ color: "#fff" }}>2 different wallets</strong> (OKX or MetaMask). One wallet acts as <strong style={{ color: "#6366f1" }}>Principal</strong> (task creator), the other as <strong style={{ color: "#10b981" }}>Agent</strong> (worker).</p>
+              </div>
+            </div>
+
+            {[
+              { step: "1", title: "Create Two Wallets", color: "#6366f1", desc: "Open OKX or MetaMask. Create Account 1 (Principal) and Account 2 (Agent). Copy both addresses.", action: "No transaction needed" },
+              { step: "2", title: "Connect Principal Wallet", color: "#6366f1", desc: "Click 'Connect Wallet' in the top right. Select Account 1 (Principal).", action: "Connect wallet only" },
+              { step: "3", title: "Post a Mandate", color: "#6366f1", desc: "Go to Actions tab. Fill in: Agent Wallet = Account 2 address, Title = task description, Brief URL = Arweave link with task requirements, Brief Commitment = content:HASH, Evidence URL = Arweave link for evidence origin, Evidence Commitment = content:HASH, Bond = GEN amount to stake.", action: "Sends GEN bond to contract" },
+              { step: "4", title: "Lock Partial Band", color: "#6366f1", desc: "Load your mandate. Set Partial % (e.g., 50 = agent gets 50% if PARTIAL verdict). Click Lock Band.", action: "Sets payout percentage" },
+              { step: "5", title: "Switch to Agent Wallet", color: "#10b981", desc: "Disconnect Principal wallet. Connect Account 2 (Agent). Load the mandate.", action: "Switch wallet only" },
+              { step: "6", title: "Accept Mandate", color: "#10b981", desc: "Click 'Accept Mandate'. This starts the 30-day delivery window.", action: "Agent accepts the task" },
+              { step: "7", title: "Submit Deliverable", color: "#10b981", desc: "Fill in Delivery Note (describe what you delivered), Snapshot URL (Arweave link with proof-of-work), Commitment = content:HASH. Click Submit Deliverable.", action: "Agent submits proof" },
+              { step: "8", title: "Switch to Principal Wallet", color: "#6366f1", desc: "Disconnect Agent wallet. Connect Account 1 (Principal). Load the mandate.", action: "Switch wallet only" },
+              { step: "9", title: "Review Delivery", color: "#6366f1", desc: "If satisfied: click 'Close Review'. If not: fill Counter-Evidence URL + note, click 'Challenge'.", action: "Principal reviews or challenges" },
+              { step: "10", title: "Run AI Adjudication", color: "#8b5cf6", desc: "Either party can click 'Run AI Jury'. 3 validators independently fetch evidence and judge: FULFILLED, PARTIAL, or REJECTED.", action: "AI evaluates evidence" },
+              { step: "11", title: "Settle Bond", color: "#10b981", desc: "Click 'Settle Bond'. Distribution: FULFILLED = Agent gets 100%, PARTIAL = Agent gets partial%, REJECTED = Principal gets 100%.", action: "GEN distributed via emit_transfer" },
+            ].map((s) => (
+              <div key={s.step} style={{ display: "flex", gap: "1rem", marginBottom: "1rem", padding: "1rem", background: "#0a0a0f", borderRadius: "0.5rem", border: "1px solid #1e1e2e" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: s.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontSize: "1rem", fontWeight: 700, color: "#fff" }}>{s.step}</span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: "0.9rem", color: "#fff", margin: "0 0 0.25rem" }}>{s.title}</h3>
+                  <p style={{ fontSize: "0.75rem", color: "#9ca3af", margin: "0 0 0.5rem", lineHeight: 1.5 }}>{s.desc}</p>
+                  <span style={{ fontSize: "0.65rem", color: s.color, background: s.color + "20", padding: "0.2rem 0.5rem", borderRadius: "999px" }}>{s.action}</span>
+                </div>
+              </div>
+            ))}
+
+            <div style={{ marginTop: "1.5rem", background: "#1e1e2e", borderRadius: "0.5rem", padding: "1rem", border: "1px solid #2a2a3e" }}>
+              <h3 style={{ fontSize: "0.85rem", color: "#10b981", margin: "0 0 0.5rem" }}>💡 Tips</h3>
+              <ul style={{ fontSize: "0.75rem", color: "#9ca3af", margin: 0, paddingLeft: "1.25rem", lineHeight: 1.8 }}>
+                <li>Evidence must be on <strong style={{ color: "#fff" }}>IPFS or Arweave</strong> (immutable). Regular URLs won't work.</li>
+                <li>Commitment format: <code style={{ color: "#6366f1", background: "#0a0a0f", padding: "0.1rem 0.3rem", borderRadius: "0.25rem" }}>content:HASH</code> where HASH matches the URL.</li>
+                <li>Bond is real GEN — it gets locked in the contract until settlement.</li>
+                <li>Either party can trigger adjudication after delivery.</li>
+                <li>Recovery: if evidence is unavailable, both parties can approve equal-split recovery.</li>
+              </ul>
+            </div>
+          </div>
+        )}
 
         {tab === "ledger" && (
           <div style={{ background: "#111118", borderRadius: "0.75rem", border: "1px solid #1e1e2e", overflow: "hidden" }}>
