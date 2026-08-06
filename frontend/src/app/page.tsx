@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   connectWallet,
   contractAddress,
@@ -150,6 +150,9 @@ export default function Page() {
   const [counterNote, setCounterNote] = useState("");
   const [counterUrl, setCounterUrl] = useState("");
   const [counterCommit, setCounterCommit] = useState("");
+  const [sampleData, setSampleData] = useState<{ id: number; label: string; agent_address: string; title: string; brief_url: string; brief_commitment: string; evidence_url: string; evidence_commitment: string; bond: string; partial_pct: string; delivery_note?: string }[]>([]);
+  const [selectedSample, setSelectedSample] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const ca = contractAddress();
 
@@ -174,6 +177,75 @@ export default function Page() {
   }, [ca]);
 
   useEffect(() => { sync(); }, [sync]);
+
+  // Load sample data on mount
+  useEffect(() => {
+    fetch("/sample-data.json")
+      .then((r) => r.json())
+      .then((data) => setSampleData(data))
+      .catch(() => {});
+  }, []);
+
+  const fillSample = (id: string) => {
+    setSelectedSample(id);
+    const sample = sampleData.find((s) => String(s.id) === id);
+    if (!sample) return;
+    setAgentAddr(sample.agent_address);
+    setTitle(sample.title);
+    setBriefUrl(sample.brief_url);
+    setBriefCommit(sample.brief_commitment);
+    setEvidenceUrl(sample.evidence_url);
+    setEvidenceCommit(sample.evidence_commitment);
+    setBondAmount(sample.bond);
+    setPartialPct(sample.partial_pct);
+    setDeliveryNote(sample.delivery_note || "");
+  };
+
+  const importFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string);
+        const items = Array.isArray(data) ? data : [data];
+        // If it's sample-data format, merge into sampleData
+        if (items[0]?.agent_address) {
+          setSampleData((prev) => [...prev, ...items]);
+          // Auto-fill first item
+          const s = items[0];
+          setAgentAddr(s.agent_address || "");
+          setTitle(s.title || "");
+          setBriefUrl(s.brief_url || "");
+          setBriefCommit(s.brief_commitment || "");
+          setEvidenceUrl(s.evidence_url || "");
+          setEvidenceCommit(s.evidence_commitment || "");
+          setBondAmount(s.bond || "1");
+          setPartialPct(s.partial_pct || "50");
+          setDeliveryNote(s.delivery_note || "");
+          setTx({ success: true, data: `Imported ${items.length} sample(s)` });
+        }
+        // If it's a single mandate form export
+        else if (items[0]?.title && items[0]?.briefUrl) {
+          const s = items[0];
+          setAgentAddr(s.agentAddr || "");
+          setTitle(s.title || "");
+          setBriefUrl(s.briefUrl || "");
+          setBriefCommit(s.briefCommit || "");
+          setEvidenceUrl(s.evidenceUrl || "");
+          setEvidenceCommit(s.evidenceCommit || "");
+          setBondAmount(s.bondAmount || "1");
+          setPartialPct(s.partialPct || "50");
+          setDeliveryNote(s.deliveryNote || "");
+          setTx({ success: true, data: "Form data imported" });
+        }
+      } catch {
+        setTx({ success: false, error: "Invalid JSON file" });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
 
   const doConnect = async () => {
     const r = await connectWallet();
@@ -474,6 +546,43 @@ export default function Page() {
 
               {!selected && (
                 <div style={{ display: "grid", gap: "0.6rem" }}>
+                  {/* Quick Fill: Sample Dropdown + Import */}
+                  <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end", marginBottom: "0.25rem" }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: "0.65rem", color: "#4b5563", textTransform: "uppercase", display: "block", marginBottom: "0.2rem" }}>Quick Fill — Sample Data</label>
+                      <select
+                        value={selectedSample}
+                        onChange={(e) => fillSample(e.target.value)}
+                        style={{ width: "100%", background: "#0a0a0f", border: "1px solid #2a2a3e", borderRadius: "0.35rem", padding: "0.5rem 0.6rem", color: "#fff", fontSize: "0.8rem", outline: "none", cursor: "pointer", appearance: "none" as const, backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 0.6rem center" }}
+                      >
+                        <option value="">— Select a test scenario —</option>
+                        {sampleData.map((s) => (
+                          <option key={s.id} value={String(s.id)}>
+                            #{s.id} — {s.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{ position: "relative" }}>
+                      <input ref={fileInputRef} type="file" accept=".json" onChange={importFile} style={{ display: "none" }} />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        style={{ background: "#1e1e2e", color: "#6366f1", border: "1px solid #6366f1", padding: "0.5rem 1rem", borderRadius: "0.35rem", cursor: "pointer", fontSize: "0.75rem", fontWeight: 600, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "0.4rem" }}
+                      >
+                        📂 Import JSON
+                      </button>
+                    </div>
+                  </div>
+
+                  {selectedSample && (() => {
+                    const s = sampleData.find((d) => String(d.id) === selectedSample);
+                    return s ? (
+                      <div style={{ background: "#1a1a2e", borderRadius: "0.5rem", padding: "0.6rem 0.8rem", border: "1px solid #2a2a3e", fontSize: "0.7rem", color: "#9ca3af" }}>
+                        <span style={{ color: "#6366f1", fontWeight: 600 }}>#{s.id}</span> — {s.label}
+                        <span style={{ color: "#4b5563", marginLeft: "0.5rem" }}>Bond: {s.bond} GEN · Partial: {s.partial_pct}%</span>
+                      </div>
+                    ) : null;
+                  })()}
                   <F label="Agent Wallet" v={agentAddr} set={setAgentAddr} ph="0x..." />
                   <F label="Title" v={title} set={setTitle} ph="What needs to be done" />
                   <F label="Brief URL (IPFS/Arweave)" v={briefUrl} set={setBriefUrl} ph="https://arweave.net/..." />
