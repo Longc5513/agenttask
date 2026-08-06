@@ -1,197 +1,220 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/GenLayer-StudioNet_61999-6366f1?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTEyIDJMMyA3djEwbDkgNSA5LTVIN0wxMiAyeiIvPjwvc3ZnPg==" alt="GenLayer" />
-  <img src="https://img.shields.io/badge/Contract-LIVE-10b981?style=for-the-badge&logo=ethereum&logoColor=white" alt="Live" />
-  <img src="https://img.shields.io/badge/Frontend-Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
-  <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT" />
-</p>
+<div align="center">
 
-<h1 align="center">AgentTask</h1>
+<img src="https://raw.githubusercontent.com/Longc5513/agenttask/master/frontend/public/agentbot.gif" width="120" alt="AgentTask AgentBot"/>
 
-<p align="center">
-  <strong>Bonded mandate lifecycle for autonomous agent work on GenLayer</strong>
-</p>
+# AgentTask
 
-<p align="center">
-  A principal posts a mandate with a GEN bond.<br/>
-  An agent accepts, delivers, and gets paid — or the bond is slashed.<br/>
-  AI adjudication resolves disputes through validator consensus.
-</p>
+### Bonded Mandate Lifecycle for Autonomous Agent Work on GenLayer
 
-<p align="center">
-  <a href="https://agenttask.vercel.app">🔗 Live App</a> · <a href="https://explorer-studio.genlayer.com/address/0x33E354284635b4462Eb3e9491923D7EC259a7712">📜 Explorer</a> · <a href="#api">📖 API</a>
-</p>
+[![GenLayer](https://img.shields.io/badge/GenLayer-StudioNet_61999-6366f1?style=flat-square&logo=ethereum&logoColor=white)](https://explorer-studio.genlayer.com/address/0x33E354284635b4462Eb3e9491923D7EC259a7712)
+[![License: MIT](https://img.shields.io/badge/License-MIT-10b981?style=flat-square)](LICENSE)
+[![Deploy](https://img.shields.io/badge/Deploy-Vercel-000?style=flat-square&logo=vercel&logoColor=white)](https://agenttask.vercel.app)
+
+A principal posts a mandate with a **GEN bond**. An agent accepts, delivers, and gets paid — or the bond is slashed. **AI adjudication** resolves disputes through validator consensus.
+
+<br/>
+
+[**Live App**](https://agenttask.vercel.app) · [**Explorer**](https://explorer-studio.genlayer.com/address/0x33E354284635b4462Eb3e9491923D7EC259a7712) · [**Contract**](contracts/AgentTask.py)
+
+</div>
 
 ---
 
-## Why GenLayer?
-
-AgentTask could not work as a traditional smart contract. The AI jury independently fetches evidence from immutable sources (IPFS/Arweave), interprets delivery against a locked brief, and selects a financial outcome — all inside validator consensus. No single party controls the verdict.
-
----
-
-## Architecture
-
-<p align="center">
-  <img src="https://agenttask.vercel.app/architecture.svg" alt="AgentTask Architecture" width="100%" />
-</p>
-
----
-
-## Lifecycle
+## How It Works
 
 ```
-DRAFT ──▶ OFFERED ──▶ ACTIVE ──▶ DELIVERED ──▶ CHALLENGED ──▶ RULING_READY ──▶ SETTLED
-  │          │           │            │              │
-  └─cancel   └─cancel    └─expire     └─close_review └─adjudicate
+┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
+│  DRAFT   │───▶│ OFFERED  │───▶│  ACTIVE  │───▶│DELIVERED │
+│ Principal│    │  Agent   │    │  Agent   │    │Principal │
+│ posts +  │    │ accepts  │    │ delivers │    │ reviews  │
+│ bonds    │    │          │    │          │    │          │
+└──────────┘    └──────────┘    └──────────┘    └────┬─────┘
+                                                      │
+                              ┌────────────────────────┤
+                              │                        │
+                              ▼                        ▼
+                       ┌──────────┐            ┌───────────┐
+                       │CHALLENGED│            │  CLOSE    │
+                       │ counter  │            │  REVIEW   │
+                       │ evidence │            └─────┬─────┘
+                       └────┬─────┘                  │
+                            │                        │
+                            ▼                        ▼
+                     ┌──────────────┐        ┌──────────────┐
+                     │RULING_READY  │◀───────│ REVIEW_READY │
+                     │ AI verdict   │        │  window      │
+                     └──────┬───────┘        │  expired     │
+                            │                └──────────────┘
+                            ▼
+                     ┌──────────┐
+                     │ SETTLED  │
+                     │ bond     │
+                     │distributed│
+                     └──────────┘
 ```
 
-| # | Phase | Actor | Action | Bond Status |
-|---|-------|-------|--------|-------------|
-| 1 | `DRAFT` | Principal | Post mandate + GEN bond | Locked in contract |
-| 2 | `OFFERED` | Principal | Lock partial band % | Band set |
-| 3 | `ACTIVE` | Agent | Accept mandate | 30-day window |
-| 4 | `DELIVERED` | Agent | Submit immutable snapshot | Delivery locked |
-| 5 | `CHALLENGED` | Principal | Challenge with counter-evidence | Ready for AI |
-| 6 | `RULING_READY` | Either | AI jury adjudicates | Verdict selected |
-| 7 | `SETTLED` | Either | Settle bond distribution | Transferred |
+| Phase | Who Acts | What Happens |
+|:------|:---------|:-------------|
+| **DRAFT** | Principal | Posts mandate + GEN bond, sets partial band |
+| **OFFERED** | Agent | Accepts mandate within deadline |
+| **ACTIVE** | Agent | Submits deliverable with immutable proof |
+| **DELIVERED** | Principal | Reviews or challenges with counter-evidence |
+| **CHALLENGED** | Either | AI jury adjudicates via validator consensus |
+| **RULING_READY** | Either | Settles bond distribution |
+| **SETTLED** | — | Done. Real GEN transferred. |
 
 ---
 
-## Adjudication Outcomes
+## AI Adjudication
 
-| Outcome | Agent Receives | Principal Receives | Trigger |
-|---------|---------------|-------------------|---------|
-| `FULFILLED` | 100% bond | 0% | Delivery meets all requirements |
-| `PARTIAL` | partial_pct% | remainder | Delivery meets some requirements |
-| `REJECTED` | 0% | 100% bond | Delivery fails requirements |
-| `UNAVAILABLE` | Recovery window | Recovery window | Evidence cannot be fetched |
+The contract uses **GenLayer's equivalence principle** — validators independently fetch evidence and reach consensus on one of four outcomes:
 
----
+| Outcome | Agent Gets | Principal Gets |
+|:--------|:-----------|:---------------|
+| ✅ **FULFILLED** | 100% bond | 0% |
+| 🔶 **PARTIAL** | `partial_pct%` | Remainder |
+| ❌ **REJECTED** | 0% | 100% bond |
+| ⚠️ **UNAVAILABLE** | Recovery window | Recovery window |
 
-## Consensus
-
-Uses `gl.eq_principle.prompt_comparative()` with the equivalence principle:
-
-> *"Two AgentTask rulings are equivalent only when they select the same outcome: FULFILLED, PARTIAL, REJECTED, or UNAVAILABLE."*
-
-Both leader and validator independently fetch brief + delivery + counter-evidence inside consensus via `gl.nondet.web.render()`.
+```
+Validators fetch brief + delivery + counter-evidence
+independently via gl.nondet.web.render() INSIDE the
+consensus block — no single backend opinion.
+```
 
 ---
 
 ## Contract
 
-```
+```python
 0x33E354284635b4462Eb3e9491923D7EC259a7712  (StudioNet 61999)
 ```
 
-| Method | Type | Description |
-|--------|------|-------------|
-| `open_mandate` | `@write.payable` | Post mandate with GEN bond |
-| `lock_partial_band` | `@write` | Set partial completion % |
-| `accept_mandate` | `@write` | Agent accepts the mandate |
-| `submit_deliverable` | `@write` | Agent submits proof-of-work |
-| `challenge_deliverable` | `@write` | Principal challenges delivery |
-| `close_review` | `@write` | Close review window (auto-adjudicate) |
-| `adjudicate` | `@write` | Run AI jury with consensus |
-| `settle` | `@write` | Distribute bond per verdict |
-| `cancel_mandate` | `@write` | Cancel unaccepted mandate |
-| `expire_mandate` | `@write` | Expire past-deadline mandate |
-| `approve_recovery` | `@write` | Both parties approve equal split |
-| `claim_recovery_timeout` | `@write` | Claim after timeout |
-| `get_mandate` | `@view` | Read mandate details |
-| `get_stats` | `@view` | Read contract statistics |
+### Write (payable)
+```python
+open_mandate(agent, title, brief_url, brief_commitment, evidence_url, evidence_commitment)
+```
+
+### Write
+```python
+lock_partial_band(mid, pct)      accept_mandate(mid)
+submit_deliverable(mid, ...)     challenge_deliverable(mid, ...)
+close_review(mid)                adjudicate(mid)
+settle(mid)                      cancel_mandate(mid)
+expire_mandate(mid)              approve_recovery(mid)
+claim_recovery_timeout(mid)
+```
+
+### View
+```python
+get_mandate(mid)    get_stats()
+```
 
 ---
 
-## Settlement
+## Architecture
 
-Real GEN transfers via `_Recipient(addr).emit_transfer()`. No synthetic accounting — every settlement moves actual token value.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        FRONTEND                              │
+│  ┌─────────────┐  ┌──────────────┐  ┌────────────────────┐  │
+│  │  Wallet      │  │  genlayer-js │  │  Step-by-Step      │  │
+│  │  Connection  │  │  SDK Client  │  │  Guide + AgentBot  │  │
+│  └──────┬──────┘  └──────┬───────┘  └────────────────────┘  │
+│         │                │                                    │
+│         ▼                ▼                                    │
+│  ┌──────────────────────────────────┐                        │
+│  │  Actions Panel                   │                        │
+│  │  • Quick Fill (20 samples)       │                        │
+│  │  • Import JSON                   │                        │
+│  │  • Mandate Lifecycle Forms       │                        │
+│  └──────────────────────────────────┘                        │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    GENLAYER STUDIO NET                        │
+│                                                              │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │              AgentTask Contract                       │   │
+│  │  ┌─────────┐  ┌──────────┐  ┌───────────────────┐   │   │
+│  │  │ Mandate │  │  Bond    │  │  AI Adjudication  │   │   │
+│  │  │ Ledger  │  │  Custody │  │  gl.eq_principle  │   │   │
+│  │  └─────────┘  └──────────┘  │  .prompt_comparative│  │   │
+│  │                              └───────────────────┘   │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                                                              │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐                     │
+│  │Valiator │  │Valiator │  │Valiator │  Consensus Layer     │
+│  │   #1    │  │   #2    │  │   #3    │                     │
+│  └─────────┘  └─────────┘  └─────────┘                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Project Structure
+
+```
+agenttask/
+├── contracts/
+│   └── AgentTask.py          # Intelligent contract (Python)
+├── frontend/
+│   ├── src/
+│   │   ├── app/page.tsx      # Main UI with 3 tabs
+│   │   └── lib/genlayer.ts   # genlayer-js SDK wrapper
+│   ├── public/
+│   │   ├── sample-data.json  # 20 test scenarios
+│   │   ├── agentbot.gif      # AgentBot mascot
+│   │   └── bg.gif            # Animated background
+│   └── package.json          # genlayer-js 1.1.8
+├── tests/
+│   └── test_agenttask.py     # Contract tests
+└── README.md
+```
 
 ---
 
 ## Quick Start
 
+### Prerequisites
+- OKX or MetaMask wallet
+- GEN tokens on StudioNet (chain `61999`)
+
+### Run Locally
 ```bash
-# Clone
 git clone https://github.com/Longc5513/agenttask.git
-cd agenttask
-
-# Install frontend
-cd frontend && npm install
-
-# Run dev server
+cd agenttask/frontend
+npm install
 npm run dev
+```
 
-# Run contract tests
-cd ../tests && python -m pytest -v
+### Deploy Contract
+```bash
+genlayer deploy --contract contracts/AgentTask.py
+```
+
+### Run Tests
+```bash
+python -m pytest tests/ -v
 ```
 
 ---
 
-## Tech Stack
+## Key Design Decisions
 
-| Layer | Technology |
-|-------|-----------|
-| Contract | GenLayer Intelligent Contract (Python) |
-| Consensus | `gl.eq_principle.prompt_comparative()` |
-| Evidence | `gl.nondet.web.render()` — IPFS/Arweave fetch |
-| Settlement | `emit_transfer()` — real GEN transfers |
-| Frontend | Next.js 16 + TypeScript |
-| SDK | `genlayer-js` 1.1.8 |
-| Chain | StudioNet 61999 |
-| Deploy | Vercel |
-
----
-
-## Evidence Flow
-
-```
-Principal                    Contract                      Agent
-    │                           │                            │
-    │  open_mandate(bond)       │                            │
-    │  + brief_url              │                            │
-    │  + brief_commitment       │                            │
-    │  + evidence_url           │                            │
-    │  + evidence_commitment    │                            │
-    │──────────────────────────▶│                            │
-    │                           │                            │
-    │  lock_partial_band(%)     │                            │
-    │──────────────────────────▶│                            │
-    │                           │                            │
-    │                           │◀── accept_mandate ─────────│
-    │                           │                            │
-    │                           │◀── submit_deliverable ─────│
-    │                           │    (delivery_url           │
-    │                           │     delivery_commitment)   │
-    │                           │                            │
-    │  challenge_deliverable    │                            │
-    │  (counter_url             │                            │
-    │   counter_commitment)     │                            │
-    │──────────────────────────▶│                            │
-    │                           │                            │
-    │                           │──▶ ADJUDICATE              │
-    │                           │   gl.nondet.web.render()   │
-    │                           │   fetch brief ────────────▶│ IPFS
-    │                           │   fetch delivery ─────────▶│ IPFS
-    │                           │   fetch counter ──────────▶│ Arweave
-    │                           │                            │
-    │                           │◀── FULFILLED/PARTIAL/      │
-    │                           │    REJECTED/UNAVAILABLE    │
-    │                           │                            │
-    │                           │──▶ SETTLE                  │
-    │                           │   emit_transfer(agent)     │
-    │                           │   emit_transfer(principal) │
-    │◀──────────────────────────│                            │
-```
+| Decision | Rationale |
+|:---------|:----------|
+| **Content-addressed evidence** | Briefs, deliveries, and counter-evidence use IPFS/Arweave hashes — immutable and verifiable |
+| **Real GEN transfers** | `emit_transfer()` for actual value movement, not synthetic accounting |
+| **genlayer-js SDK** | Official SDK for proper GenLayer transaction serialization |
+| **Equivalence principle** | Validators compare material interpretation, not surface wording |
+| **Bounded recovery** | Both parties can agree to 50/50 split if evidence is unavailable |
 
 ---
 
 ## License
 
-MIT
+[MIT](LICENSE) — Built on [GenLayer](https://genlayer.com)
 
----
-
-<p align="center">
-  Built on <a href="https://genlayer.com">GenLayer</a> — The Intelligence Layer of the Internet
-</p>
+</div>
