@@ -10,6 +10,7 @@ import {
   parseGen,
   readContract,
   saveContractAddress,
+  switchToStudionet,
   writeContract,
 } from "@/lib/genlayer";
 import type { ContractStats, MandateRecord, TxResult } from "@/lib/types";
@@ -254,6 +255,43 @@ export default function Page() {
       sync();
     }
   };
+
+  // Auto-switch to StudioNet when page loads and wallet is connected
+  useEffect(() => {
+    if (!window.ethereum) return;
+    const tryAutoSwitch = async () => {
+      try {
+        const accounts = await window.ethereum!.request({
+          method: "eth_accounts",
+          params: [],
+        }) as string[];
+        if (accounts[0]) {
+          setAccount(accounts[0]);
+          await switchToStudionet();
+          sync();
+        }
+      } catch {}
+    };
+    tryAutoSwitch();
+
+    // Listen for chain/account changes
+    const handleChainChanged = () => { window.location.reload(); };
+    const handleAccountsChanged = (...args: unknown[]) => {
+      const accs = args[0] as string[];
+      if (accs[0]) {
+        setAccount(accs[0]);
+        switchToStudionet();
+      } else {
+        setAccount("");
+      }
+    };
+    window.ethereum?.on?.("chainChanged", handleChainChanged);
+    window.ethereum?.on?.("accountsChanged", handleAccountsChanged);
+    return () => {
+      window.ethereum?.removeListener?.("chainChanged", handleChainChanged);
+      window.ethereum?.removeListener?.("accountsChanged", handleAccountsChanged);
+    };
+  }, [sync]);
 
   const wr = async (fn: string, args: unknown[], value = BigInt(0)) => {
     if (!ca || !account) return;

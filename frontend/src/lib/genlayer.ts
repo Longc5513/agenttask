@@ -9,6 +9,8 @@ declare global {
   interface Window {
     ethereum?: {
       request: (input: { method: string; params?: unknown[] }) => Promise<unknown>;
+      on?: (event: string, callback: (...args: unknown[]) => void) => void;
+      removeListener?: (event: string, callback: (...args: unknown[]) => void) => void;
     };
   }
 }
@@ -74,6 +76,34 @@ export function saveContractAddress(value: string) {
   const clean = value.trim();
   if (clean) window.localStorage.setItem(STORAGE_KEY, clean);
   else window.localStorage.removeItem(STORAGE_KEY);
+}
+
+export async function switchToStudionet(): Promise<boolean> {
+  if (!window.ethereum) return false;
+  const chainId = `0x${studionet.id.toString(16)}`;
+  try {
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId }],
+    });
+    return true;
+  } catch {
+    try {
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [{
+          chainId,
+          chainName: "GenLayer Studio Network",
+          nativeCurrency: { name: "GEN Token", symbol: "GEN", decimals: 18 },
+          rpcUrls: ["https://studio.genlayer.com/api"],
+          blockExplorerUrls: ["https://explorer-studio.genlayer.com"],
+        }],
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }
 
 export async function connectWallet(): Promise<TxResult> {
