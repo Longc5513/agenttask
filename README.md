@@ -14,44 +14,15 @@ A principal posts a mandate with a **GEN bond**. An agent accepts, delivers, and
 
 <br/>
 
-[**Live App**](https://agenttask.vercel.app) · [**Explorer**](https://explorer-studio.genlayer.com/address/0x33E354284635b4462Eb3e9491923D7EC259a7712) · [**Contract**](contracts/AgentTask.py)
+[**🚀 Live App**](https://agenttask.vercel.app) · [**🔍 Explorer**](https://explorer-studio.genlayer.com/address/0x33E354284635b4462Eb3e9491923D7EC259a7712) · [**📄 Contract**](contracts/AgentTask.py)
 
 </div>
 
 ---
 
-## How It Works
+## Lifecycle
 
-```
-┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
-│  DRAFT   │───▶│ OFFERED  │───▶│  ACTIVE  │───▶│DELIVERED │
-│ Principal│    │  Agent   │    │  Agent   │    │Principal │
-│ posts +  │    │ accepts  │    │ delivers │    │ reviews  │
-│ bonds    │    │          │    │          │    │          │
-└──────────┘    └──────────┘    └──────────┘    └────┬─────┘
-                                                      │
-                              ┌────────────────────────┤
-                              │                        │
-                              ▼                        ▼
-                       ┌──────────┐            ┌───────────┐
-                       │CHALLENGED│            │  CLOSE    │
-                       │ counter  │            │  REVIEW   │
-                       │ evidence │            └─────┬─────┘
-                       └────┬─────┘                  │
-                            │                        │
-                            ▼                        ▼
-                     ┌──────────────┐        ┌──────────────┐
-                     │RULING_READY  │◀───────│ REVIEW_READY │
-                     │ AI verdict   │        │  window      │
-                     └──────┬───────┘        │  expired     │
-                            │                └──────────────┘
-                            ▼
-                     ┌──────────┐
-                     │ SETTLED  │
-                     │ bond     │
-                     │distributed│
-                     └──────────┘
-```
+<img src="docs/lifecycle.svg" alt="AgentTask Lifecycle" width="100%"/>
 
 | Phase | Who Acts | What Happens |
 |:------|:---------|:-------------|
@@ -67,26 +38,26 @@ A principal posts a mandate with a **GEN bond**. An agent accepts, delivers, and
 
 ## AI Adjudication
 
-The contract uses **GenLayer's equivalence principle** — validators independently fetch evidence and reach consensus on one of four outcomes:
+<img src="docs/outcomes.svg" alt="Adjudication Outcomes" width="100%"/>
 
-| Outcome | Agent Gets | Principal Gets |
-|:--------|:-----------|:---------------|
-| ✅ **FULFILLED** | 100% bond | 0% |
-| 🔶 **PARTIAL** | `partial_pct%` | Remainder |
-| ❌ **REJECTED** | 0% | 100% bond |
-| ⚠️ **UNAVAILABLE** | Recovery window | Recovery window |
+The contract uses **GenLayer's equivalence principle** — validators independently fetch evidence via `gl.nondet.web.render()` and reach consensus through `gl.eq_principle.prompt_comparative()`.
 
 ```
 Validators fetch brief + delivery + counter-evidence
-independently via gl.nondet.web.render() INSIDE the
-consensus block — no single backend opinion.
+independently INSIDE the consensus block — no single backend opinion.
 ```
+
+---
+
+## Architecture
+
+<img src="docs/architecture.svg" alt="System Architecture" width="100%"/>
 
 ---
 
 ## Contract
 
-```python
+```
 0x33E354284635b4462Eb3e9491923D7EC259a7712  (StudioNet 61999)
 ```
 
@@ -112,64 +83,27 @@ get_mandate(mid)    get_stats()
 
 ---
 
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        FRONTEND                              │
-│  ┌─────────────┐  ┌──────────────┐  ┌────────────────────┐  │
-│  │  Wallet      │  │  genlayer-js │  │  Step-by-Step      │  │
-│  │  Connection  │  │  SDK Client  │  │  Guide + AgentBot  │  │
-│  └──────┬──────┘  └──────┬───────┘  └────────────────────┘  │
-│         │                │                                    │
-│         ▼                ▼                                    │
-│  ┌──────────────────────────────────┐                        │
-│  │  Actions Panel                   │                        │
-│  │  • Quick Fill (20 samples)       │                        │
-│  │  • Import JSON                   │                        │
-│  │  • Mandate Lifecycle Forms       │                        │
-│  └──────────────────────────────────┘                        │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    GENLAYER STUDIO NET                        │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │              AgentTask Contract                       │   │
-│  │  ┌─────────┐  ┌──────────┐  ┌───────────────────┐   │   │
-│  │  │ Mandate │  │  Bond    │  │  AI Adjudication  │   │   │
-│  │  │ Ledger  │  │  Custody │  │  gl.eq_principle  │   │   │
-│  │  └─────────┘  └──────────┘  │  .prompt_comparative│  │   │
-│  │                              └───────────────────┘   │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                                                              │
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐                     │
-│  │Valiator │  │Valiator │  │Valiator │  Consensus Layer     │
-│  │   #1    │  │   #2    │  │   #3    │                     │
-│  └─────────┘  └─────────┘  └─────────┘                     │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
 ## Project Structure
 
 ```
 agenttask/
 ├── contracts/
-│   └── AgentTask.py          # Intelligent contract (Python)
+│   └── AgentTask.py              # Intelligent contract (Python)
 ├── frontend/
 │   ├── src/
-│   │   ├── app/page.tsx      # Main UI with 3 tabs
-│   │   └── lib/genlayer.ts   # genlayer-js SDK wrapper
+│   │   ├── app/page.tsx          # Main UI — 3 tabs
+│   │   └── lib/genlayer.ts       # genlayer-js SDK wrapper
 │   ├── public/
-│   │   ├── sample-data.json  # 20 test scenarios
-│   │   ├── agentbot.gif      # AgentBot mascot
-│   │   └── bg.gif            # Animated background
-│   └── package.json          # genlayer-js 1.1.8
+│   │   ├── sample-data.json      # 20 test scenarios
+│   │   ├── agentbot.gif          # AgentBot mascot
+│   │   └── bg.gif                # Animated background
+│   └── package.json              # genlayer-js 1.1.8
 ├── tests/
-│   └── test_agenttask.py     # Contract tests
+│   └── test_agenttask.py         # Contract tests
+├── docs/
+│   ├── lifecycle.svg             # Lifecycle diagram
+│   ├── architecture.svg          # Architecture diagram
+│   └── outcomes.svg              # Adjudication outcomes
 └── README.md
 ```
 
@@ -213,8 +147,8 @@ python -m pytest tests/ -v
 
 ---
 
-## License
+<div align="center">
 
-[MIT](LICENSE) — Built on [GenLayer](https://genlayer.com)
+**Built on [GenLayer](https://genlayer.com)** · [MIT License](LICENSE)
 
 </div>

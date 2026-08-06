@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 280" font-family="'Segoe UI',system-ui,sans-serif">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#34d399"/>
+    </linearGradient>
+    <linearGradient id="g4" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#fbbf24"/>
+    </linearGradient>
+    <linearGradient id="g5" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ef4444"/>
+      <stop offset="100%" style="stop-color:#f97316"/>
+    </linearGradient>
+    <linearGradient id="g6" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#a78bfa"/>
+    </linearGradient>
+    <linearGradient id="g7" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#059669"/>
+      <stop offset="100%" style="stop-color:#10b981"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6366f1"/>
+    </marker>
+    <marker id="arrow-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="280" rx="12" fill="#0f172a"/>
+  <rect width="900" height="280" rx="12" fill="url(#g1)" opacity="0.03"/>
+
+  <!-- Title -->
+  <text x="450" y="30" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="600" letter-spacing="3" text-transform="uppercase">MANDATE LIFECYCLE</text>
+
+  <!-- Main Flow -->
+  <!-- DRAFT -->
+  <rect x="20" y="55" width="100" height="60" rx="8" fill="#1e1b4b" stroke="#6366f1" stroke-width="1.5"/>
+  <rect x="20" y="55" width="100" height="60" rx="8" fill="url(#g1)" opacity="0.15"/>
+  <text x="70" y="80" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">DRAFT</text>
+  <text x="70" y="98" text-anchor="middle" fill="#a5b4fc" font-size="9">Principal bonds</text>
+
+  <!-- Arrow 1 -->
+  <line x1="120" y1="85" x2="148" y2="85" stroke="#6366f1" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- OFFERED -->
+  <rect x="150" y="55" width="100" height="60" rx="8" fill="#1e1b4b" stroke="#6366f1" stroke-width="1.5"/>
+  <rect x="150" y="55" width="100" height="60" rx="8" fill="url(#g2)" opacity="0.15"/>
+  <text x="200" y="80" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">OFFERED</text>
+  <text x="200" y="98" text-anchor="middle" fill="#93c5fd" font-size="9">Agent accepts</text>
+
+  <!-- Arrow 2 -->
+  <line x1="250" y1="85" x2="278" y2="85" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ACTIVE -->
+  <rect x="280" y="55" width="100" height="60" rx="8" fill="#1e1b4b" stroke="#3b82f6" stroke-width="1.5"/>
+  <rect x="280" y="55" width="100" height="60" rx="8" fill="url(#g2)" opacity="0.15"/>
+  <text x="330" y="80" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">ACTIVE</text>
+  <text x="330" y="98" text-anchor="middle" fill="#93c5fd" font-size="9">30-day window</text>
+
+  <!-- Arrow 3 -->
+  <line x1="380" y1="85" x2="408" y2="85" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- DELIVERED -->
+  <rect x="410" y="55" width="100" height="60" rx="8" fill="#1e1b4b" stroke="#f59e0b" stroke-width="1.5"/>
+  <rect x="410" y="55" width="100" height="60" rx="8" fill="url(#g4)" opacity="0.15"/>
+  <text x="460" y="80" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">DELIVERED</text>
+  <text x="460" y="98" text-anchor="middle" fill="#fcd34d" font-size="9">Principal reviews</text>
+
+  <!-- Branch arrows from DELIVERED -->
+  <line x1="460" y1="115" x2="460" y2="148" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="510" y1="85" x2="538" y2="85" stroke="#10b981" stroke-width="2" marker-end="url(#arrow-g)"/>
+
+  <!-- CHALLENGED (bottom) -->
+  <rect x="400" y="150" width="120" height="60" rx="8" fill="#1e1b4b" stroke="#ef4444" stroke-width="1.5"/>
+  <rect x="400" y="150" width="120" height="60" rx="8" fill="url(#g5)" opacity="0.15"/>
+  <text x="460" y="175" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">CHALLENGED</text>
+  <text x="460" y="193" text-anchor="middle" fill="#fca5a5" font-size="9">Counter-evidence</text>
+
+  <!-- Arrow to RULING_READY -->
+  <line x1="520" y1="180" x2="548" y2="180" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- RULING_READY -->
+  <rect x="550" y="150" width="120" height="60" rx="8" fill="#1e1b4b" stroke="#8b5cf6" stroke-width="1.5"/>
+  <rect x="550" y="150" width="120" height="60" rx="8" fill="url(#g6)" opacity="0.15"/>
+  <text x="610" y="170" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">RULING_READY</text>
+  <text x="610" y="188" text-anchor="middle" fill="#c4b5fd" font-size="9">AI verdict</text>
+  <text x="610" y="200" text-anchor="middle" fill="#c4b5fd" font-size="8">🤖 Validator consensus</text>
+
+  <!-- Arrow RULING to SETTLED -->
+  <line x1="670" y1="180" x2="698" y2="180" stroke="#10b981" stroke-width="2" marker-end="url(#arrow-g)"/>
+
+  <!-- SETTLED -->
+  <rect x="700" y="150" width="110" height="60" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1.5"/>
+  <rect x="700" y="150" width="110" height="60" rx="8" fill="url(#g3)" opacity="0.15"/>
+  <text x="755" y="175" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">SETTLED</text>
+  <text x="755" y="193" text-anchor="middle" fill="#6ee7b7" font-size="9">Bond distributed</text>
+
+  <!-- CLOSE REVIEW (right of DELIVERED) -->
+  <rect x="540" y="55" width="120" height="60" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1.5"/>
+  <rect x="540" y="55" width="120" height="60" rx="8" fill="url(#g3)" opacity="0.15"/>
+  <text x="600" y="80" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">CLOSE REVIEW</text>
+  <text x="600" y="98" text-anchor="middle" fill="#6ee7b7" font-size="9">Window expired</text>
+
+  <!-- CLOSE REVIEW to RULING_READY -->
+  <line x1="600" y1="115" x2="610" y2="148" stroke="#10b981" stroke-width="2" marker-end="url(#arrow-g)"/>
+
+  <!-- Cancel path -->
+  <rect x="20" y="150" width="100" height="50" rx="8" fill="#1e293b" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="70" y="172" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="600">CANCEL</text>
+  <text x="70" y="188" text-anchor="middle" fill="#64748b" font-size="9">Full refund</text>
+  <line x1="70" y1="115" x2="70" y2="148" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+  <!-- Expire path -->
+  <rect x="150" y="150" width="100" height="50" rx="8" fill="#1e293b" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="200" y="172" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="600">EXPIRE</text>
+  <text x="200" y="188" text-anchor="middle" fill="#64748b" font-size="9">Deadline passed</text>
+  <line x1="200" y1="115" x2="200" y2="148" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+  <!-- Recovery path -->
+  <rect x="280" y="150" width="100" height="50" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="330" y="172" text-anchor="middle" fill="#fcd34d" font-size="11" font-weight="600">RECOVERY</text>
+  <text x="330" y="188" text-anchor="middle" fill="#92400e" font-size="9">50/50 split</text>
+  <line x1="400" y1="180" x2="382" y2="175" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+  <!-- Legend -->
+  <rect x="20" y="225" width="860" height="40" rx="6" fill="#1e293b" opacity="0.5"/>
+  <circle cx="45" cy="245" r="5" fill="#6366f1"/>
+  <text x="55" y="249" fill="#94a3b8" font-size="10">Principal action</text>
+  <circle cx="175" cy="245" r="5" fill="#3b82f6"/>
+  <text x="185" y="249" fill="#94a3b8" font-size="10">Agent action</text>
+  <circle cx="295" cy="245" r="5" fill="#ef4444"/>
+  <text x="305" y="249" fill="#94a3b8" font-size="10">Dispute</text>
+  <circle cx="395" cy="245" r="5" fill="#8b5cf6"/>
+  <text x="405" y="249" fill="#94a3b8" font-size="10">AI adjudication</text>
+  <circle cx="535" cy="245" r="5" fill="#10b981"/>
+  <text x="545" y="249" fill="#94a3b8" font-size="10">Settlement</text>
+  <line x1="650" y1="245" x2="690" y2="245" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="695" y="249" fill="#94a3b8" font-size="10">Optional / timeout path</text>
+</svg>
