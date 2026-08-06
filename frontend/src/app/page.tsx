@@ -61,7 +61,7 @@ function PixelCharacter({ step }: { step: number }) {
 
       {/* Robot Image */}
       <div className={speaking ? "animate-pulse" : "pixel-float"} style={{ width: "80px", height: "80px", flexShrink: 0, borderRadius: "1rem", overflow: "hidden", border: "2px solid #6366f1", boxShadow: speaking ? "0 0 20px rgba(99, 102, 241, 0.5)" : "0 0 10px rgba(99, 102, 241, 0.2)", transition: "box-shadow 0.3s" }}>
-        <img src="/agentbot.jpg" alt="AgentBot" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <img src="/agentbot.gif" alt="AgentBot" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       </div>
 
       {/* Text Content */}
@@ -318,7 +318,7 @@ export default function Page() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(rgba(10, 10, 15, 0.85), rgba(10, 10, 15, 0.92)), url('/bg.jpg') center/cover no-repeat fixed", color: "#e0e0e0", fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "linear-gradient(rgba(10, 10, 15, 0.82), rgba(10, 10, 15, 0.90)), url('/bg.gif') center/cover no-repeat fixed", color: "#e0e0e0", fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Header */}
       <header style={{ padding: "1rem 2rem", borderBottom: "1px solid #1a1a2e", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
